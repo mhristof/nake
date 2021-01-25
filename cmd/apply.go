@@ -27,10 +27,11 @@ var (
 				log.Fatal("Terraform not available for this folder")
 			}
 
+			force, _ := cmd.Flags().GetBool("force")
 			commands := []string{
 				tf.Init(),
 				tf.Plan(),
-				tf.Apply(),
+				tf.Apply(force),
 			}
 			for _, command := range commands {
 				if command == "" {
@@ -43,5 +44,6 @@ var (
 )
 
 func init() {
+	applyCmd.PersistentFlags().BoolP("force", "f", false, "Force 'terraform apply' ignoring source files")
 	rootCmd.AddCommand(applyCmd)
 }

@@ -72,11 +72,11 @@ func (t *Terraform) Plan() string {
 	return ""
 }
 
-func (t *Terraform) Apply() string {
+func (t *Terraform) Apply(force bool) string {
 	stateMod := modTime(filepath.Join(t.Pwd, "terraform.tfstate"))
-
 	planMod := modTime(filepath.Join(t.Pwd, "terraform.tfplan"))
-	if planMod.After(stateMod) {
+
+	if force || planMod.After(stateMod) {
 		return "terraform apply terraform.tfplan"
 	}
 

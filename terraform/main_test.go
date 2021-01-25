@@ -109,6 +109,7 @@ func TestApply(t *testing.T) {
 	var cases = []struct {
 		name  string
 		files map[string]string
+		force bool
 		exp   string
 	}{
 		{
@@ -129,6 +130,16 @@ func TestApply(t *testing.T) {
 			},
 			exp: "",
 		},
+		{
+			name: "Force apply",
+			files: map[string]string{
+				"main.tf":           "",
+				"terraform.tfplan":  "",
+				"terraform.tfstate": "",
+			},
+			force: true,
+			exp:   "terraform apply terraform.tfplan",
+		},
 	}
 
 	for _, test := range cases {
@@ -139,6 +150,6 @@ func TestApply(t *testing.T) {
 			Pwd: dir,
 		}
 
-		assert.Equal(t, test.exp, tf.Apply(), test.name)
+		assert.Equal(t, test.exp, tf.Apply(test.force), test.name)
 	}
 }
