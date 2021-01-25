@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -39,7 +38,7 @@ func (t *Terraform) Init() string {
 		return ""
 	}
 
-	return fmt.Sprintf("cd %s && terraform init", t.Pwd)
+	return "terraform init"
 }
 
 // modTime Return the modification time of a file. If it doesnt exist, report
@@ -77,8 +76,12 @@ func (t *Terraform) Apply(force bool) string {
 	planMod := modTime(filepath.Join(t.Pwd, "terraform.tfplan"))
 
 	if force || planMod.After(stateMod) {
-		return "terraform apply terraform.tfplan"
+		return "terraform apply terraform.tfplan && rm terraform.tfplan"
 	}
 
 	return ""
+}
+
+func (t *Terraform) Clean() string {
+	return "terraform destroy -auto-approve"
 }

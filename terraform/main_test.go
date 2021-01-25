@@ -119,7 +119,7 @@ func TestApply(t *testing.T) {
 				"terraform.tfstate": "",
 				"terraform.tfplan":  "",
 			},
-			exp: "terraform apply terraform.tfplan",
+			exp: "terraform apply terraform.tfplan && rm terraform.tfplan",
 		},
 		{
 			name: "Plan file older than statefile",
@@ -138,7 +138,7 @@ func TestApply(t *testing.T) {
 				"terraform.tfstate": "",
 			},
 			force: true,
-			exp:   "terraform apply terraform.tfplan",
+			exp:   "terraform apply terraform.tfplan && rm terraform.tfplan",
 		},
 	}
 
@@ -151,5 +151,36 @@ func TestApply(t *testing.T) {
 		}
 
 		assert.Equal(t, test.exp, tf.Apply(test.force), test.name)
+	}
+}
+
+func TestInit(t *testing.T) {
+	var cases = []struct {
+		name  string
+		files map[string]string
+		exp   string
+	}{
+		{
+			name: "folder without a .terraform file",
+			exp:  "terraform init",
+		},
+		{
+			name: "folder with a .terraform file",
+			files: map[string]string{
+				".terraform": "",
+			},
+			exp: "",
+		},
+	}
+
+	for _, test := range cases {
+		dir, cleanup := dirWithFiles(t, test.files)
+		defer cleanup()
+
+		var tf = Terraform{
+			Pwd: dir,
+		}
+
+		assert.Equal(t, test.exp, tf.Init(), test.name)
 	}
 }
