@@ -76,3 +76,22 @@ func (t *Terraform) Plan() string {
 
 	return ""
 }
+
+func (t *Terraform) Apply() string {
+	state := filepath.Join(t.Pwd, "terraform.tfstate")
+	stateInfo, err := os.Stat(state)
+	// if the file doesnt exist, use beginning of Epoch as the plan timestamp
+	// to force a rebuild
+	stateMod := time.Time{}
+	if err == nil {
+		stateMod = stateInfo.ModTime()
+	}
+
+	plan := filepath.Join(t.Pwd, "terraform.tfplan")
+	planMod := modTime(plan)
+	if planMod.After(stateMod) {
+		return "terraform apply terraform.tfplan"
+	}
+
+	return ""
+}

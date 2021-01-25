@@ -104,3 +104,41 @@ func TestPlan(t *testing.T) {
 		assert.Equal(t, test.exp, tf.Plan(), test.name)
 	}
 }
+
+func TestApply(t *testing.T) {
+	var cases = []struct {
+		name  string
+		files map[string]string
+		exp   string
+	}{
+		{
+			name: "Plan file newer than statefile",
+			files: map[string]string{
+				"main.tf":           "",
+				"terraform.tfstate": "",
+				"terraform.tfplan":  "",
+			},
+			exp: "terraform apply terraform.tfplan",
+		},
+		{
+			name: "Plan file older than statefile",
+			files: map[string]string{
+				"main.tf":           "",
+				"terraform.tfplan":  "",
+				"terraform.tfstate": "",
+			},
+			exp: "",
+		},
+	}
+
+	for _, test := range cases {
+		dir, cleanup := dirWithFiles(t, test.files)
+		defer cleanup()
+
+		var tf = Terraform{
+			Pwd: dir,
+		}
+
+		assert.Equal(t, test.exp, tf.Apply(), test.name)
+	}
+}
