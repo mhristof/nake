@@ -18,11 +18,13 @@ func image(dockerfile string) string {
 }
 
 func (d *Docker) Build(image string) string {
+	fmt.Println(fmt.Sprintf("d: %+v", d))
+
 	if _, err := os.Stat(d.Dockerfile); os.IsNotExist(err) {
 		log.WithFields(log.Fields{
 			"d.Dockerfile": d.Dockerfile,
 		}).Panic("Dockerfile missing")
 	}
 
-	return fmt.Sprintf("docker build --tag %s --dockerfile %s %s", image, d.Dockerfile, d.Pwd)
+	return fmt.Sprintf("docker build --tag %s --file %s %s", image, d.Dockerfile, d.Pwd)
 }

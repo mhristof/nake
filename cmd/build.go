@@ -13,15 +13,17 @@ var (
 		Use:   "build",
 		Short: "Docker build",
 		Run: func(cmd *cobra.Command, args []string) {
-			dockerfile, _ := cmd.Flags().GetString("dockerfile")
+			dockerfile, _ := cmd.Flags().GetString("file")
 
 			var docker = docker.Docker{
 				Dockerfile: dockerfile,
 				Pwd:        pwd,
 			}
 
+			name, _ := cmd.Flags().GetString("tag")
+
 			var commands = []string{
-				docker.Build("TODO"),
+				docker.Build(name),
 			}
 
 			for _, command := range commands {
@@ -35,7 +37,7 @@ var (
 )
 
 func init() {
-	buildCmd.PersistentFlags().StringP("dockerfile", "f", "Dockerfile", "Dockerfile to use")
+	buildCmd.PersistentFlags().StringP("file", "f", "Dockerfile", "Dockerfile to use")
 	abs, err := filepath.Abs(pwd)
 	if err != nil {
 		panic(err)

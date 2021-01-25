@@ -23,7 +23,7 @@ func TestBuild(t *testing.T) {
 			files: map[string]string{
 				"Dockerfile": heredoc.Doc(`FROM golang`),
 			},
-			exp: "docker build --tag {{.Image}} --dockerfile Dockerfile .",
+			exp: "docker build --tag {{.Image}} --file Dockerfile .",
 		},
 	}
 
