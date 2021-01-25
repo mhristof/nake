@@ -42,24 +42,19 @@ func (t *Terraform) Init() string {
 	return fmt.Sprintf("cd %s && terraform init", t.Pwd)
 }
 
+// modTime Return the modification time of a file. If it doesnt exist, report
+// Epoch beginning of time.
 func modTime(file string) time.Time {
 	info, err := os.Stat(file)
 	if err != nil {
-		panic(err)
+		return time.Time{}
 	}
 
 	return info.ModTime()
 }
 
 func (t *Terraform) Plan() string {
-	plan := filepath.Join(t.Pwd, "terraform.tfplan")
-	planInfo, err := os.Stat(plan)
-	// if the file doesnt exist, use beginning of Epoch as the plan timestamp
-	// to force a rebuild
-	planMod := time.Time{}
-	if err == nil {
-		planMod = planInfo.ModTime()
-	}
+	planMod := modTime(filepath.Join(t.Pwd, "terraform.tfplan"))
 
 	files, err := ioutil.ReadDir(t.Pwd)
 	if err != nil {
@@ -78,17 +73,9 @@ func (t *Terraform) Plan() string {
 }
 
 func (t *Terraform) Apply() string {
-	state := filepath.Join(t.Pwd, "terraform.tfstate")
-	stateInfo, err := os.Stat(state)
-	// if the file doesnt exist, use beginning of Epoch as the plan timestamp
-	// to force a rebuild
-	stateMod := time.Time{}
-	if err == nil {
-		stateMod = stateInfo.ModTime()
-	}
+	stateMod := modTime(filepath.Join(t.Pwd, "terraform.tfstate"))
 
-	plan := filepath.Join(t.Pwd, "terraform.tfplan")
-	planMod := modTime(plan)
+	planMod := modTime(filepath.Join(t.Pwd, "terraform.tfplan"))
 	if planMod.After(stateMod) {
 		return "terraform apply terraform.tfplan"
 	}
