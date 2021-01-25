@@ -24,7 +24,7 @@ fast-test:  ## Run fast tests
 
 .PHONY: test
 test:	## Run all tests
-	go test ./...
+	go test -v ./...
 
 .PHONY: clean
 clean:
