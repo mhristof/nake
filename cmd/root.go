@@ -9,14 +9,16 @@ import (
 )
 
 var version = "devel"
+var pwd = ""
 
 var rootCmd = &cobra.Command{
-	Use:   "nake",
-	Short: "Opinionated make to handle common DevOps patterns",
-	Long:  `TODO: changeme`,
+	Use:     "nake",
+	Short:   "Opinionated make to handle common DevOps patterns",
+	Long:    `TODO: changeme`,
 	Version: version,
-	Run: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		Verbose(cmd)
+		pwd, _ = os.Getwd()
 	},
 }
 

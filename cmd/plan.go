@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/mhristof/nake/bash"
 	"github.com/mhristof/nake/log"
 	"github.com/mhristof/nake/terraform"
@@ -14,13 +12,8 @@ var (
 		Use:   "plan",
 		Short: "Terraform plan",
 		Run: func(cmd *cobra.Command, args []string) {
-			dir, err := os.Getwd()
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			var tf = terraform.Terraform{
-				Pwd: dir,
+				Pwd: pwd,
 			}
 
 			if !tf.Available() {
