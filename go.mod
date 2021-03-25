@@ -7,7 +7,10 @@ require (
 	github.com/go-enry/go-enry/v2 v2.6.1
 	github.com/mhristof/go-update v0.1.0
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.0.0
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/testify v1.6.1 // indirect
+	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 )

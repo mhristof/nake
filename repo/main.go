@@ -7,12 +7,13 @@ import (
 )
 
 func Languages(dest string) []string {
+	var ret []string
+
 	ignored := map[string]bool{
 		"":            true,
 		"Ignore List": true,
 	}
 	langs := make(map[string]int)
-	var ret []string
 
 	files, err := ioutil.ReadDir(dest)
 	if err != nil {
@@ -20,19 +21,19 @@ func Languages(dest string) []string {
 	}
 
 	for _, file := range files {
-
 		if file.IsDir() {
 			continue
 		}
 
 		lang, _ := enry.GetLanguageByExtension(file.Name())
-		if _, ok := ignored[lang]; ok == true {
+		if _, ok := ignored[lang]; ok {
 			continue
 		}
 
-		if _, ok := langs[lang]; ok != true {
+		if _, ok := langs[lang]; !ok {
 			ret = append(ret, lang)
 		}
+
 		langs[lang] = 1
 	}
 
