@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/mhristof/nake/log"
@@ -23,7 +24,7 @@ var (
 				repos.Repos = append(repos.Repos, precommit.Get(language)...)
 			}
 
-			reposJSON, err := yaml.Marshal(repos)
+			reposYAML, err := yaml.Marshal(repos)
 
 			output, err := cmd.Flags().GetString("output")
 			if err != nil {
@@ -35,10 +36,11 @@ var (
 			}).Debug("Writing to file")
 
 			if dry {
+				fmt.Println(string(reposYAML))
 				return
 			}
 
-			err = ioutil.WriteFile(output, reposJSON, 0644)
+			err = ioutil.WriteFile(output, reposYAML, 0644)
 			if err != nil {
 				panic(err)
 			}
