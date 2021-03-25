@@ -10,6 +10,7 @@ import (
 
 var version = "devel"
 var pwd = ""
+var dry = false
 
 var rootCmd = &cobra.Command{
 	Use:     "nake",
@@ -17,6 +18,7 @@ var rootCmd = &cobra.Command{
 	Long:    `TODO: changeme`,
 	Version: version,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		dry, _ = cmd.Flags().GetBool("dryrun")
 		Verbose(cmd)
 		pwd, _ = os.Getwd()
 	},

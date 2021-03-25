@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"fmt"
+	"io/ioutil"
 
+	"github.com/mhristof/nake/log"
 	"github.com/mhristof/nake/precommit"
 	"github.com/mhristof/nake/repo"
 	"github.com/spf13/cobra"
@@ -14,22 +15,40 @@ var (
 		Use:   "precommit",
 		Short: "Generate pre-commit configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			var repos precommit.Repos
+			var repos = precommit.Repos{
+				Repos: precommit.Get("default"),
+			}
 
 			for _, language := range repo.Languages("./") {
 				repos.Repos = append(repos.Repos, precommit.Get(language)...)
 			}
 
 			reposJSON, err := yaml.Marshal(repos)
+
+			output, err := cmd.Flags().GetString("output")
 			if err != nil {
 				panic(err)
 			}
 
-			fmt.Println(string(reposJSON))
+			log.WithFields(log.Fields{
+				"output": output,
+			}).Debug("Writing to file")
+
+			if dry {
+				return
+			}
+
+			err = ioutil.WriteFile(output, reposJSON, 0644)
+			if err != nil {
+				panic(err)
+			}
+
 		},
 	}
 )
 
 func init() {
+	precommitCmd.PersistentFlags().StringP("output", "o", ".pre-commit-config.yaml", "Output file to write")
+
 	rootCmd.AddCommand(precommitCmd)
 }
