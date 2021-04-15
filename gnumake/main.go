@@ -3,6 +3,7 @@ package gnumake
 import (
 	"fmt"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/mhristof/nake/log"
 	"github.com/mhristof/nake/repo"
 )
@@ -17,6 +18,14 @@ type Rule struct {
 }
 
 var RulesLib = map[string][]Rule{
+	"help": []Rule{
+		Rule{
+			Help:    "Show this help",
+			Targets: "help",
+			Recipe:  "@grep '.*:.*##' Makefile | grep -v grep  | sort | sed 's/:.* ##/:/g' | column -t -s:",
+			Phony:   true,
+		},
+	},
 	"Python": []Rule{
 		Rule{
 			Help:    "Run pep8 for the current directory",
@@ -84,6 +93,8 @@ var RulesLib = map[string][]Rule{
 func Generate() {
 	var rules Rules
 
+	rules = append(rules, RulesLib["help"]...)
+
 	for _, language := range repo.Languages("./") {
 		log.WithFields(log.Fields{
 			"language": language,
@@ -92,7 +103,21 @@ func Generate() {
 		rules = append(rules, RulesLib[language]...)
 	}
 
+	rules.PrintHeader()
 	rules.Print()
+}
+
+func (r Rules) PrintHeader() {
+	fmt.Println(heredoc.Doc(`
+		MAKEFLAGS += --warn-undefined-variables
+		SHELL := /bin/bash
+		ifeq ($(word 1,$(subst ., ,$(MAKE_VERSION))),4)
+		.SHELLFLAGS := -eu -o pipefail -c
+		endif
+		.DEFAULT_GOAL := help
+		.ONESHELL:
+	`),
+	)
 }
 
 func (r Rules) Print() {
