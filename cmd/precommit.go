@@ -51,6 +51,5 @@ var (
 
 func init() {
 	precommitCmd.PersistentFlags().StringP("output", "o", ".pre-commit-config.yaml", "Output file to write")
-
 	rootCmd.AddCommand(precommitCmd)
 }
