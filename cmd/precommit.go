@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/mhristof/nake/precommit"
 	"github.com/mhristof/nake/repo"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -21,10 +22,20 @@ var (
 			}
 
 			for _, language := range repo.Languages("./") {
+				log.WithFields(log.Fields{
+					"language": language,
+				}).Debug("Adding precommit rules")
 				repos.Repos = append(repos.Repos, precommit.Get(language)...)
 			}
 
-			reposYAML, err := yaml.Marshal(repos)
+			var b bytes.Buffer
+			yamlEncoder := yaml.NewEncoder(&b)
+			yamlEncoder.SetIndent(2) // this is what you're looking for
+			err := yamlEncoder.Encode(&repos)
+			if err != nil {
+				panic(err)
+
+			}
 
 			output, err := cmd.Flags().GetString("output")
 			if err != nil {
@@ -36,11 +47,19 @@ var (
 			}).Debug("Writing to file")
 
 			if dry {
-				fmt.Println(string(reposYAML))
+				fmt.Println(b.String())
 				return
 			}
 
-			err = ioutil.WriteFile(output, reposYAML, 0644)
+			err = ioutil.WriteFile(output,
+				bytes.Join([][]byte{
+					[]byte("---"),
+					b.Bytes()},
+
+					[]byte("\n"),
+				),
+				0644,
+			)
 			if err != nil {
 				panic(err)
 			}

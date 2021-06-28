@@ -15,6 +15,9 @@ GIT_TAG := $(shell git name-rev --tags --name-only $(GIT_REF))
 .PHONY: all
 all: ./bin/nake.darwin ./bin/nake.linux
 
+install: ./bin/nake.darwin
+	cp $< ~/bin/nake
+
 ./bin/nake.%: $(shell find ./ -name '*.go')
 	GOOS=$* go build -o $@ -ldflags "-X github.com/mhristof/nake/cmd.version=$(GIT_TAG)+$(GIT_REF)" main.go
 
