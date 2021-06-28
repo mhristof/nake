@@ -4,19 +4,24 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mhristof/nake/gnumake"
 	"github.com/mhristof/nake/log"
 	"github.com/spf13/cobra"
 )
 
 var version = "devel"
 var pwd = ""
+var dry = false
 
 var rootCmd = &cobra.Command{
 	Use:     "nake",
 	Short:   "Opinionated make to handle common DevOps patterns",
-	Long:    `TODO: changeme`,
 	Version: version,
+	Run: func(cmd *cobra.Command, args []string) {
+		gnumake.Generate()
+	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		dry, _ = cmd.Flags().GetBool("dryrun")
 		Verbose(cmd)
 		pwd, _ = os.Getwd()
 	},
