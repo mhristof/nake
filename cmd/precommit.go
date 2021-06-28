@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/mhristof/nake/log"
 	"github.com/mhristof/nake/precommit"
@@ -21,7 +22,12 @@ var (
 				Repos: precommit.Get("default"),
 			}
 
-			for _, language := range repo.Languages("./") {
+			dir, err := cmd.Flags().GetString("dir")
+			if err != nil {
+				panic(err)
+			}
+
+			for _, language := range repo.Languages(dir) {
 				log.WithFields(log.Fields{
 					"language": language,
 				}).Debug("Adding precommit rules")
@@ -31,7 +37,7 @@ var (
 			var b bytes.Buffer
 			yamlEncoder := yaml.NewEncoder(&b)
 			yamlEncoder.SetIndent(2) // this is what you're looking for
-			err := yamlEncoder.Encode(&repos)
+			err = yamlEncoder.Encode(&repos)
 			if err != nil {
 				panic(err)
 
@@ -40,6 +46,15 @@ var (
 			output, err := cmd.Flags().GetString("output")
 			if err != nil {
 				panic(err)
+			}
+
+			outputAbs, err := filepath.Abs(output)
+			if err != nil {
+				panic(err)
+			}
+
+			if outputAbs != output {
+				output = filepath.Join(dir, output)
 			}
 
 			log.WithFields(log.Fields{
@@ -70,5 +85,6 @@ var (
 
 func init() {
 	precommitCmd.PersistentFlags().StringP("output", "o", ".pre-commit-config.yaml", "Output file to write")
+	precommitCmd.PersistentFlags().StringP("dir", "d", "./", "Directory to deploy precommit rules for")
 	rootCmd.AddCommand(precommitCmd)
 }

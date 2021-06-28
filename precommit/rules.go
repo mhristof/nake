@@ -5,18 +5,23 @@ import (
 	"fmt"
 	"strings"
 
+	pc "github.com/mhristof/go-precommit"
 	"gopkg.in/yaml.v2"
 )
 
 //go:embed repos/*
 var languages embed.FS
 
-func Get(lang string) []Repo {
+type Repos struct {
+	Repos []pc.Repo
+}
+
+func Get(lang string) []pc.Repo {
 	var repos Repos
 
 	config, err := languages.ReadFile(fmt.Sprintf("repos/%s.yaml", strings.ToLower(lang)))
 	if err != nil {
-		return []Repo{}
+		return []pc.Repo{}
 	}
 
 	if err := yaml.Unmarshal(config, &repos); err != nil {
