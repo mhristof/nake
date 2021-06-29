@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/mhristof/nake/terraform"
 	"github.com/spf13/cobra"
@@ -23,10 +24,17 @@ var (
 				panic(err)
 			}
 
+			dir, err := cmd.Flags().GetString("dir")
+			if err != nil {
+				panic(err)
+			}
+
 			output, err := cmd.Flags().GetString("output")
 			if err != nil {
 				panic(err)
 			}
+
+			output = filepath.Join(dir, output)
 
 			err = ioutil.WriteFile(output, []byte(terraform.Versions(source, strict)), 0644)
 			if err != nil {
