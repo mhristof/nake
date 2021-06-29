@@ -13,6 +13,7 @@ repos:
       - id: check-toml
       - id: pretty-format-json
       - id: trailing-whitespace
+        exclude: terraform/fixtures/*
       - id: end-of-file-fixer
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.25.0

@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"flag"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+var generate = flag.Bool("generate", false, "Generate the fixtures")
 
 func createfs(t *testing.T, files []string) (string, func()) {
 	dir, err := ioutil.TempDir("", "")
@@ -54,12 +57,23 @@ func TestVersions(t *testing.T) {
 
 	for _, test := range cases {
 		source, cleanup := createfs(t, test.fs)
-		out, err := ioutil.ReadFile(filepath.Join("fixtures", strings.ReplaceAll(test.name, " ", ".")+".tf"))
+		result := Versions(source, test.strict)
+
+		fixture := filepath.Join("fixtures", strings.ReplaceAll(test.name, " ", ".")+".tf")
+		if *generate {
+			err := ioutil.WriteFile(fixture, []byte(result), 0644)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+		}
+
+		out, err := ioutil.ReadFile(fixture)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, string(out), Versions(source, test.strict), test.name)
+		assert.Equal(t, string(out), result, test.name)
 		cleanup()
 	}
 }

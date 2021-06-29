@@ -29,6 +29,10 @@ fast-test:  ## Run fast tests
 test:	## Run all tests
 	go test -v ./...
 
+.PHONY: fixtures
+fixtures:
+	go test ./... -generate
+
 .PHONY: clean
 clean:
 	rm -rf bin/nake.*
