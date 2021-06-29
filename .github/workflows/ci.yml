@@ -13,7 +13,3 @@ jobs:
         with:
           go-version: '^1.16'
       - run: make test
-      - name: automerge
-        uses: mhristof/github-action-automerge@v1.0.1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
