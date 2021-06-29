@@ -3,10 +3,12 @@ package repo
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-enry/go-enry/v2"
 )
 
+// Languages Return a list of all languages filetypes inside `dest` folder.
 func Languages(dest string) []string {
 	var ret []string
 
@@ -22,13 +24,23 @@ func Languages(dest string) []string {
 				return nil
 			}
 
-			lang, _ := enry.GetLanguageByExtension(path)
-			if _, ok := ignored[lang]; ok {
+			if strings.Index(path, ".git") > 0 {
 				return nil
 			}
 
-			if _, ok := langs[lang]; !ok {
-				ret = append(ret, lang)
+			if strings.Index(path, ".terraform") > 0 {
+				return nil
+			}
+
+			if strings.HasSuffix(path, ".pre-commit-config.yaml") {
+				langs["precommit"] = 1
+
+				return nil
+			}
+
+			lang, _ := enry.GetLanguageByExtension(path)
+			if _, ok := ignored[lang]; ok {
+				return nil
 			}
 
 			langs[lang] = 1
@@ -37,6 +49,10 @@ func Languages(dest string) []string {
 		})
 	if err != nil {
 		panic(err)
+	}
+
+	for lang := range langs {
+		ret = append(ret, lang)
 	}
 
 	return ret

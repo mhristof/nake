@@ -22,7 +22,7 @@ var (
 				Repos: precommit.Get("default"),
 			}
 
-			dir, err := cmd.Flags().GetString("dir")
+			dir, err := rootCmd.PersistentFlags().GetString("dir")
 			if err != nil {
 				panic(err)
 			}
@@ -85,6 +85,5 @@ var (
 
 func init() {
 	precommitCmd.PersistentFlags().StringP("output", "o", ".pre-commit-config.yaml", "Output file to write")
-	precommitCmd.PersistentFlags().StringP("dir", "d", "./", "Directory to deploy precommit rules for")
 	rootCmd.AddCommand(precommitCmd)
 }

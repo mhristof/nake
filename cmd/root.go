@@ -18,7 +18,12 @@ var rootCmd = &cobra.Command{
 	Short:   "Opinionated make to handle common DevOps patterns",
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
-		gnumake.Generate()
+		dir, err := cmd.Flags().GetString("dir")
+		if err != nil {
+			panic(err)
+		}
+
+		gnumake.Generate(dir)
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		dry, _ = cmd.Flags().GetBool("dryrun")
@@ -39,6 +44,7 @@ func Verbose(cmd *cobra.Command) {
 	}
 }
 func init() {
+	rootCmd.PersistentFlags().StringP("dir", "d", "./", "Directory to deploy files to")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Increase verbosity")
 	rootCmd.PersistentFlags().BoolP("dryrun", "n", false, "Dry run")
 }
