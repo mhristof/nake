@@ -52,7 +52,7 @@ var RulesLib = map[string][]Rule{
 			Phony:   true,
 		},
 	},
-	"Terraform": []Rule{
+	"HCL": []Rule{
 		Rule{
 			Help:          "Force run 'terraform init'",
 			Targets:       "init",
@@ -60,7 +60,7 @@ var RulesLib = map[string][]Rule{
 			Phony:         true,
 		},
 		Rule{
-			Targets: ".terrform",
+			Targets: ".terraform",
 			Recipe:  "terraform init",
 		},
 		Rule{
@@ -96,13 +96,14 @@ var RulesLib = map[string][]Rule{
 		Rule{
 			Help:    "Run 'terraform destroy'",
 			Targets: "destroy",
-			Recipe:  "terraform destroy -auto-approve && rm -f terraform.tf{state,plan}",
+			Recipe:  "terraform destroy -auto-approve",
 			Phony:   true,
 		},
 		Rule{
 			Help:          "Clean the repository resources",
 			Targets:       "clean",
 			Prerequisites: "destroy",
+			Recipe:        "rm -rf terraform.tf{state,plan} .terraform terraform.state.d",
 			Phony:         true,
 		},
 	},
