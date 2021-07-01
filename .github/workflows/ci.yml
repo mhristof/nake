@@ -12,4 +12,9 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '^1.16'
+      - name: install tfenv and terraform
+        run: |
+          git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+          tfenv install
       - run: make test
