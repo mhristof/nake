@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mhristof/nake/log"
 	"golang.org/x/mod/semver"
 )
@@ -118,12 +119,17 @@ func Versions(source string, strict bool) string {
 
 	t := template.Must(template.New("versions.tf").Parse(versionsTFTemplate))
 
-	b := new(strings.Builder)
+	b := new(bytes.Buffer)
 
 	err = t.Execute(b, ver)
 	if err != nil {
 		panic(err)
 	}
 
-	return b.String()
+	return strings.ReplaceAll(
+		string(hclwrite.Format(b.Bytes())),
+		// template adds an extra new line after the providers range `end`, so
+		// removing it here to keep things tidy
+		"\n\n", "\n",
+	)
 }

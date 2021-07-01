@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/go-enry/go-enry/v2 v2.6.1
+	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/mhristof/go-precommit v0.0.0-20210628180904-e14d6e38440b
 	github.com/mhristof/go-update v0.1.0
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
