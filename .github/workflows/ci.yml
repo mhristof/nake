@@ -16,6 +16,5 @@ jobs:
         run: |
           git clone https://github.com/tfutils/tfenv.git ~/.tfenv
           echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
-          hash -r
-          tfenv install
+          ./.tfenv/bin/tfenv install
       - run: make test
