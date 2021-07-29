@@ -27,7 +27,12 @@ var (
 				panic(err)
 			}
 
-			for _, language := range repo.Languages(dir) {
+			ignore, err := rootCmd.PersistentFlags().GetStringSlice("ignore")
+			if err != nil {
+				panic(err)
+			}
+
+			for _, language := range repo.Languages(dir, ignore) {
 				log.WithFields(log.Fields{
 					"language": language,
 				}).Debug("Adding precommit rules")

@@ -23,6 +23,7 @@ type Rule struct {
 	Phony         bool
 	Help          string
 	Variable      string
+	Default       string
 }
 
 // RulesLib A library of make rules for known languages.
@@ -56,6 +57,9 @@ var RulesLib = map[string][]Rule{
 		{
 			Targets: fmt.Sprintf("%s.%s", bin(), runtime.GOOS),
 			Help:    "Build the application binary for current OS",
+		},
+		{
+			Default: fmt.Sprintf("%s.%s", bin(), runtime.GOOS),
 		},
 		{
 			Help:    fmt.Sprintf("Build the application binary for target OS, for example %s.linux", bin()),
@@ -93,6 +97,9 @@ var RulesLib = map[string][]Rule{
 		},
 	},
 	"HCL": {
+		{
+			Default: "terraform.tfstate",
+		},
 		{
 			Help:          "Force run 'terraform init'",
 			Targets:       "init",
@@ -150,12 +157,12 @@ var RulesLib = map[string][]Rule{
 }
 
 // Generate Print the Makefile based on the filetypes in the `dest` directory.
-func Generate(dest string) {
+func Generate(dest string, ignore []string) {
 	var rules Rules
 
 	rules = append(rules, RulesLib["help"]...)
 
-	for _, language := range repo.Languages(dest) {
+	for _, language := range repo.Languages(dest, ignore) {
 		log.WithFields(log.Fields{
 			"language": language,
 		}).Debug("Found")
@@ -174,22 +181,29 @@ func (r Rules) printHeader() {
 		ifeq ($(word 1,$(subst ., ,$(MAKE_VERSION))),4)
 		.SHELLFLAGS := -eu -o pipefail -c
 		endif
-		.DEFAULT_GOAL := help
 		.ONESHELL:
 	`),
 	)
 }
 
 func (r Rules) pprint() {
+	for _, rule := range r {
+		if rule.Default == "" {
+			continue
+		}
+
+		fmt.Println(fmt.Sprintf(".DEFAULT_GOAL := %s", rule.Default))
+	}
+
 	newLine := false
 	// print variables on top
 	for _, rule := range r {
-		if rule.Variable != "" {
-			fmt.Println(rule.Variable)
-			newLine = true
-
+		if rule.Variable == "" {
 			continue
 		}
+
+		fmt.Println(rule.Variable)
+		newLine = true
 	}
 
 	if newLine {
@@ -197,7 +211,7 @@ func (r Rules) pprint() {
 	}
 
 	for _, rule := range r {
-		if rule.Variable != "" {
+		if rule.Default != "" || rule.Variable != "" {
 			continue
 		}
 

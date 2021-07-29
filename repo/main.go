@@ -9,7 +9,7 @@ import (
 )
 
 // Languages Return a list of all languages filetypes inside `dest` folder.
-func Languages(dest string) []string {
+func Languages(dest string, ignore []string) []string {
 	var ret []string
 
 	ignored := map[string]bool{
@@ -18,18 +18,23 @@ func Languages(dest string) []string {
 	}
 	langs := make(map[string]int)
 
+	ignore = append(ignore, ".terraform")
+
 	err := filepath.Walk(dest,
 		func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				return nil
 			}
 
-			if strings.Index(path, ".git") >= 0 {
-				langs["git"] = 1
-				return nil
+			for _, dir := range ignore {
+				if strings.Contains(path, dir) {
+					return nil
+				}
 			}
 
-			if strings.Index(path, ".terraform") > 0 {
+			if strings.Contains(path, ".git") {
+				langs["git"] = 1
+
 				return nil
 			}
 

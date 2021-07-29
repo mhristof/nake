@@ -23,7 +23,12 @@ var rootCmd = &cobra.Command{
 			panic(err)
 		}
 
-		gnumake.Generate(dir)
+		ignore, err := cmd.Flags().GetStringSlice("ignore")
+		if err != nil {
+			panic(err)
+		}
+
+		gnumake.Generate(dir, ignore)
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		dry, _ = cmd.Flags().GetBool("dryrun")
@@ -43,7 +48,9 @@ func Verbose(cmd *cobra.Command) {
 		log.SetLevel(log.DebugLevel)
 	}
 }
+
 func init() {
+	rootCmd.PersistentFlags().StringSliceP("ignore", "i", []string{}, "Ignore directories")
 	rootCmd.PersistentFlags().StringP("dir", "d", "./", "Directory to deploy files to")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Increase verbosity")
 	rootCmd.PersistentFlags().BoolP("dryrun", "n", false, "Dry run")
