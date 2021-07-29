@@ -1,0 +1,18 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: debug-statements
+      - id: fix-encoding-pragma
+  - repo: https://github.com/pre-commit/mirrors-autopep8
+    hooks:
+      - id: autopep8
+  - repo: https://github.com/FalconSocial/pre-commit-python-sorter
+    rev: 1.0.4
+    hooks:
+      - id: python-import-sorter
+        args: ['--silent-overwrite']
+  - repo: https://github.com/psf/black
+    hooks:
+      - id: black
