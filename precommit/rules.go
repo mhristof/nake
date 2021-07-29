@@ -12,10 +12,12 @@ import (
 //go:embed repos/*
 var languages embed.FS
 
+// Repos A list of precommit repositories.
 type Repos struct {
 	Repos []pc.Repo
 }
 
+// Get Return all the precommit repositories rules.
 func Get(lang string) []pc.Repo {
 	var repos Repos
 

@@ -44,6 +44,7 @@ repos:
       # - id: go-sec-repo-mod
       # - id: go-sec-repo-pkg
       - id: go-fmt
+        args: ["-s"]
       - id: go-imports
       - id: go-returns
       - id: go-lint

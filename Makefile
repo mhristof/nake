@@ -1,42 +1,39 @@
-#
-# vim:ft=make
-#
-
 MAKEFLAGS += --warn-undefined-variables
-SHELL := bash
+SHELL := /bin/bash
+ifeq ($(word 1,$(subst ., ,$(MAKE_VERSION))),4)
 .SHELLFLAGS := -eu -o pipefail -c
-.DEFAULT_GOAL := all
-.DELETE_ON_ERROR:
+endif
+.DEFAULT_GOAL := help
 .ONESHELL:
 
-GIT_REF := $(shell git rev-parse --short HEAD)
-GIT_TAG := $(shell git name-rev --tags --name-only $(GIT_REF))
+GIT_REF := $(shell git describe --match="" --always --dirty=+)
+GIT_TAG := $(shell git name-rev --tags --name-only $(GIT_REF) 2> /dev/null)
+PACKAGE := $(shell go list)
 
-.PHONY: all
-all: ./bin/nake.darwin ./bin/nake.linux
+.PHONY: help
+help:  ## Show this help
+	@grep '.*:.*##' Makefile | grep -v grep  | sort | sed 's/:.* ##/:/g' | column -t -s:
 
-install: ./bin/nake.darwin
-	cp $< ~/bin/nake
+.git/hooks/pre-commit:  ## Install pre-commit checks
+	pre-commit install
 
-./bin/nake.%: $(shell find ./ -name '*.go')
-	GOOS=$* go build -o $@ -ldflags "-X github.com/mhristof/nake/cmd.version=$(GIT_TAG)+$(GIT_REF)" main.go
-
-.PHONY: fast-test
-fast-test:  ## Run fast tests
-	go test ./... -tags fast
+.PHONY: check
+check: .git/hooks/pre-commit ## Run precommit checks
+	pre-commit run --all
 
 .PHONY: test
-test:	## Run all tests
+test:  ## Run go test
 	go test -v ./...
+
+bin/nake.darwin:  ## Build the application binary for current OS
+
+bin/nake.%:  ## Build the application binary for target OS, for example bin/nake.linux
+	GOOS=$* go build -o $@ -ldflags "-X $(PACKAGE)/version=$(GIT_TAG)+$(GIT_REF)" main.go
+
+.PHONY: install
+install: bin/nake.darwin ## Install the binary
+	cp $< ~/bin/nake
 
 .PHONY: fixtures
 fixtures:
 	go test ./... -generate
-
-.PHONY: clean
-clean:
-	rm -rf bin/nake.*
-
-.PHONY: help
-help:           ## Show this help.
-	@grep '.*:.*##' Makefile | grep -v grep  | sort | sed 's/:.*## /:/g' | column -t -s:

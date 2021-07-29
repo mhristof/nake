@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// Eval Evaluate a bash command with /bin/bash -c ''
 func Eval(command string) error {
 	cmd := exec.Command("/bin/bash", "-c", command)
 
@@ -17,9 +18,12 @@ func Eval(command string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
+
 	return err
 }
 
+// DirWithFiles Create a temp directory with files and contents based in the
+// input map.
 func DirWithFiles(t *testing.T, files map[string]string) (string, func()) {
 	dir, err := ioutil.TempDir("", "terraform")
 
