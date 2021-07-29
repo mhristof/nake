@@ -72,13 +72,13 @@ var RulesLib = map[string][]Rule{
 		Rule{
 			Help:          "Creates terraform.tfplan if required",
 			Targets:       "terraform.tfplan",
-			Prerequisites: "$(shell find ./ -name '*.tf')",
+			Prerequisites: "$(shell find ./ -name '*.tf') .terraform",
 			Recipe:        "terraform plan -out $@",
 		},
 		Rule{
 			Help:          "Run 'terraform apply'",
 			Targets:       "apply",
-			Prerequisites: "terraform.tfplan",
+			Prerequisites: "terraform.tfstate",
 			Phony:         true,
 		},
 		Rule{
