@@ -24,7 +24,8 @@ func Languages(dest string) []string {
 				return nil
 			}
 
-			if strings.Index(path, ".git") > 0 {
+			if strings.Index(path, ".git") >= 0 {
+				langs["git"] = 1
 				return nil
 			}
 

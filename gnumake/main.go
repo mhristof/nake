@@ -2,6 +2,10 @@ package gnumake
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/mhristof/nake/log"
@@ -18,25 +22,61 @@ type Rule struct {
 	Recipe        string
 	Phony         bool
 	Help          string
+	Variable      string
 }
 
 // RulesLib A library of make rules for known languages.
 var RulesLib = map[string][]Rule{
-	"help": []Rule{
-		Rule{
+	"help": {
+		{
 			Help:    "Show this help",
 			Targets: "help",
 			Recipe:  "@grep '.*:.*##' Makefile | grep -v grep  | sort | sed 's/:.* ##/:/g' | column -t -s:",
 			Phony:   true,
 		},
 	},
-	"precommit": []Rule{
-		Rule{
+	"git": {
+		{
+			Variable: `GIT_REF := $(shell git describe --match="" --always --dirty=+)`,
+		},
+		{
+			Variable: `GIT_TAG := $(shell git name-rev --tags --name-only $(GIT_REF))`,
+		},
+	},
+	"Go": {
+		{
+			Variable: `PACKAGE := $(shell go list)`,
+		},
+		{
+			Targets: "test",
+			Help:    "Run go test",
+			Recipe:  "go test -v ./...",
+			Phony:   true,
+		},
+		{
+			Targets: fmt.Sprintf("%s.%s", bin(), runtime.GOOS),
+			Help:    "Build the application binary for current OS",
+		},
+		{
+			Help:    fmt.Sprintf("Build the application binary for target OS, for example %s.linux", bin()),
+			Targets: fmt.Sprintf("%s.%%", bin()),
+			Recipe:  `GOOS=$* go build -o $@ -ldflags "-X $(PACKAGE)/version=$(GIT_TAG)+$(GIT_REF)" main.go`,
+		},
+		{
+			Help:          "Install the binary",
+			Targets:       "install",
+			Phony:         true,
+			Prerequisites: fmt.Sprintf("%s.%s", bin(), runtime.GOOS),
+			Recipe:        fmt.Sprintf("cp $< ~/bin/%s", packageName()),
+		},
+	},
+	"precommit": {
+		{
 			Help:    "Install pre-commit checks",
 			Targets: ".git/hooks/pre-commit",
 			Recipe:  "pre-commit install",
 		},
-		Rule{
+		{
 			Help:          "Run precommit checks",
 			Targets:       "check",
 			Recipe:        "pre-commit run --all",
@@ -44,62 +84,62 @@ var RulesLib = map[string][]Rule{
 			Phony:         true,
 		},
 	},
-	"Python": []Rule{
-		Rule{
+	"Python": {
+		{
 			Help:    "Run pep8 for the current directory",
 			Targets: "pep8",
 			Recipe:  "pycodestyle --ignore=E501",
 			Phony:   true,
 		},
 	},
-	"HCL": []Rule{
-		Rule{
+	"HCL": {
+		{
 			Help:          "Force run 'terraform init'",
 			Targets:       "init",
 			Prerequisites: ".terraform",
 			Phony:         true,
 		},
-		Rule{
+		{
 			Targets: ".terraform",
 			Recipe:  "terraform init",
 		},
-		Rule{
+		{
 			Help:          "Runs 'terraform plan'",
 			Targets:       "plan",
 			Prerequisites: "terraform.tfplan",
 			Phony:         true,
 		},
-		Rule{
+		{
 			Help:          "Creates terraform.tfplan if required",
 			Targets:       "terraform.tfplan",
 			Prerequisites: "$(shell find ./ -name '*.tf') .terraform",
 			Recipe:        "terraform plan -out $@",
 		},
-		Rule{
+		{
 			Help:          "Run 'terraform apply'",
 			Targets:       "apply",
 			Prerequisites: "terraform.tfstate",
 			Phony:         true,
 		},
-		Rule{
+		{
 			Help:          "Run 'terraform apply' if required'",
 			Targets:       "terraform.tfstate",
 			Prerequisites: "terraform.tfplan",
 			Recipe:        "terraform apply terraform.tfplan",
 		},
-		Rule{
+		{
 			Help:    "Forcefully update terraform state",
 			Targets: "force",
 			Recipe:  "touch *.tf && make terraform.tfstate",
 			Phony:   true,
 		},
-		Rule{
+		{
 			Help:    "Run 'terraform destroy'",
 			Targets: "destroy",
 			Recipe:  "terraform destroy -auto-approve",
 			Phony:   true,
 		},
-		Rule{
+		{
 			Help:          "Clean the repository resources",
 			Targets:       "clean",
 			Prerequisites: "destroy",
@@ -141,7 +181,26 @@ func (r Rules) printHeader() {
 }
 
 func (r Rules) pprint() {
+	newLine := false
+	// print variables on top
 	for _, rule := range r {
+		if rule.Variable != "" {
+			fmt.Println(rule.Variable)
+			newLine = true
+
+			continue
+		}
+	}
+
+	if newLine {
+		fmt.Println("")
+	}
+
+	for _, rule := range r {
+		if rule.Variable != "" {
+			continue
+		}
+
 		if rule.Phony {
 			fmt.Println(fmt.Sprintf(".PHONY: %s", rule.Targets))
 		}
@@ -152,4 +211,22 @@ func (r Rules) pprint() {
 		}
 		fmt.Println("")
 	}
+}
+
+func packageName() string {
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	abs, err := filepath.Abs(pwd)
+	if err != nil {
+		panic(err)
+	}
+
+	return path.Base(abs)
+}
+
+func bin() string {
+	return filepath.Join("bin/", packageName())
 }
