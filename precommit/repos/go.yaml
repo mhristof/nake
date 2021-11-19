@@ -12,3 +12,4 @@ repos:
     hooks:
       - id: gofumpt
       - id: go-unit-tests
+      - id: go-static-check
