@@ -5,13 +5,15 @@ import (
 	"os"
 
 	"github.com/mhristof/nake/gnumake"
-	"github.com/mhristof/nake/log"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var version = "devel"
-var pwd = ""
-var dry = false
+var (
+	version = "devel"
+	pwd     = ""
+	dry     = false
+)
 
 var rootCmd = &cobra.Command{
 	Use:     "nake",

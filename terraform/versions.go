@@ -12,7 +12,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/mhristof/nake/log"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
 )
 
@@ -70,7 +70,7 @@ func terraformVersion() string {
 
 // Versions Generate versions.tf content for the given `source` directory
 func Versions(source string, strict bool) string {
-	var ver = versionTF{
+	ver := versionTF{
 		RequiredVersion:   terraformVersion(),
 		RequiredProviders: make(map[string]provider),
 	}
@@ -112,7 +112,6 @@ func Versions(source string, strict bool) string {
 
 			return nil
 		})
-
 	if err != nil {
 		panic(err)
 	}

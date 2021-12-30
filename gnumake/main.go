@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/mhristof/nake/log"
 	"github.com/mhristof/nake/repo"
+	log "github.com/sirupsen/logrus"
 )
 
 // Rules A set of Makefile rules.
