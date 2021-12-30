@@ -96,6 +96,62 @@ var RulesLib = map[string][]Rule{
 			Phony:   true,
 		},
 	},
+	"Docker": {
+		{
+			Targets:       ".build",
+			Prerequisites: "Dockerfile",
+			Recipe: heredoc.Doc(`
+				docker build -t $(shell basename $(PWD) .
+				touch .build
+			`),
+		},
+		{
+			Targets:       "build",
+			Prerequisites: ".build",
+			Help:          "Build the image",
+		},
+		{
+			Targets:       "run",
+			Prerequisites: ".build",
+			Help:          "Run the image",
+			Recipe:        "docker run $(shell basename $(PWD))",
+		},
+		{
+			Targets:       "bash",
+			Prerequisites: ".build",
+			Help:          "Drop a shell into the image",
+			Recipe:        "docker run -it --command /bin/bash $(shell basename $(PWD))",
+		},
+	},
+	"terragrunt": {
+		{
+			Default: "all",
+		},
+		{
+			Help:    "Apply all",
+			Targets: "all",
+			Phony:   true,
+			Recipe:  "terragrunt run-all -auto-approve",
+		},
+		{
+			Help:    "Clean all",
+			Targets: "clean",
+			Phony:   true,
+			Recipe:  "terragrunt run-all destroy -auto-approve",
+		},
+		{
+			Help:    "Plan all",
+			Targets: "plan",
+			Phony:   true,
+			Recipe:  "terragrunt run-all plan",
+		},
+		{
+			Help:    "Apply single folder",
+			Targets: "%",
+			Phony:   true,
+			Recipe:  "cd $@ && terragrunt run-all plan",
+		},
+	},
 	"HCL": {
 		{
 			Default: "terraform.tfstate",

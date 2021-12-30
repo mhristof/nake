@@ -19,6 +19,8 @@ func Languages(dest string, ignore []string) []string {
 	langs := make(map[string]int)
 
 	ignore = append(ignore, ".terraform")
+	ignore = append(ignore, ".terragrunt-cache")
+	ignore = append(ignore, "env.hcl")
 
 	err := filepath.Walk(dest,
 		func(path string, info os.FileInfo, err error) error {
@@ -44,10 +46,24 @@ func Languages(dest string, ignore []string) []string {
 				return nil
 			}
 
+			if strings.HasSuffix(path, "terragrunt.hcl") {
+				langs["terragrunt"] = 1
+				log.WithFields(log.Fields{
+					"path": path,
+				}).Debug("found terragrunt file")
+
+				return nil
+			}
+
 			lang, _ := enry.GetLanguageByExtension(path)
 			if _, ok := ignored[lang]; ok {
 				return nil
 			}
+
+			log.WithFields(log.Fields{
+				"lang": lang,
+				"path": path,
+			}).Debug("found language")
 
 			langs[lang] = 1
 
