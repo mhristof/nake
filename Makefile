@@ -1,11 +1,10 @@
 MAKEFLAGS += --warn-undefined-variables
 SHELL := /bin/bash
-ifeq ($(word 1,$(subst ., ,$(MAKE_VERSION))),4)
 .SHELLFLAGS := -eu -o pipefail -c
-endif
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := bin/nake.$(UNAME)
 .ONESHELL:
 
+UNAME := $(shell uname -s | tr A-Z a-z)
 GIT_REF := $(shell git describe --match="" --always --dirty=+)
 GIT_TAG := $(shell git name-rev --tags --name-only $(GIT_REF) 2> /dev/null)
 PACKAGE := $(shell go list)
@@ -31,8 +30,9 @@ bin/nake.%:  ## Build the application binary for target OS, for example bin/nake
 	GOOS=$* go build -o $@ -ldflags "-X $(PACKAGE)/version=$(GIT_TAG)+$(GIT_REF)" main.go
 
 .PHONY: install
-install: bin/nake.darwin ## Install the binary
-	cp $< ~/bin/nake
+install: bin/nake.$(UNAME) ## Install the binary
+	rm -f ~/.local/bin/nake
+	cp $< ~/.local/bin/nake
 
 .PHONY: fixtures
 fixtures:
