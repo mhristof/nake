@@ -7,9 +7,11 @@ import logging
 from textwrap import dedent
 import os
 
+log = logging.getLogger(__name__)
+
 
 def render(languages):
-    default = (
+    makefile = (
         dedent(
             """
         MAKEFLAGS += --warn-undefined-variables --jobs=$(shell nproc)
@@ -30,12 +32,10 @@ def render(languages):
             ) as stream:
                 data = stream.read()
         except FileNotFoundError:
-            logging.debug("make: No config for language: %s", language)
+            log.debug("No config for language: %s", language)
 
             continue
 
-        default += "\n" + data.strip()
+        makefile += "\n" + data.strip()
 
-    logging.debug("default: %s", default)
-
-    return default
+    return makefile

@@ -7,10 +7,12 @@ import logging
 import yaml
 import os
 
+log = logging.getLogger(__name__)
+
 
 def render(languages):
     default_path = os.path.join(os.path.dirname(__file__), "default.yml")
-    logging.debug("Loading default config from: %s", default_path)
+    log.debug("Loading default config from: %s", default_path)
 
     default = None
     with open(default_path, "r") as stream:
@@ -25,6 +27,6 @@ def render(languages):
             ) as stream:
                 repos += yaml.safe_load(stream)["repos"]
         except FileNotFoundError:
-            logging.debug("No config for language: %s", language)
+            log.debug("No config for language: %s", language)
 
     return yaml.dump({"repos": repos}, default_flow_style=False)

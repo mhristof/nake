@@ -6,24 +6,26 @@
 import argparse
 import logging
 import os
-
-try:
-    import precommit
-    import make
-except ImportError:
-    import sys
-
-    sys.path.append(os.path.dirname(__file__))
-    import precommit
-    import make
-
 import hashlib
+
+import sys
+
+sys.path.append(os.path.dirname(__file__))
+import precommit
+import make
+import gitlabci
+
+
+log = logging.getLogger(__name__)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-C", default=os.getcwd(), help="Change to directory")
     parser.add_argument("-v", "--verbose", default=0, action="count", help="Verbose")
+    parser.add_argument(
+        "--gitlab-token", default=os.getenv("GITLAB_TOKEN"), help="Gitlab token"
+    )
 
     args = parser.parse_args()
 
@@ -34,22 +36,23 @@ def main():
 
     logging.basicConfig(level=level)
 
-    logging.debug("Changing to directory: %s", args.C)
+    log.debug("Changing to directory: %s", args.C)
 
     langs = languages(args.C)
     files = {
         ".pre-commit-config.yaml": precommit.render(langs),
         "Makefile": make.render(langs),
+        ".gitlab-ci.yml": gitlabci.render(args.C, args.gitlab_token, langs),
     }
 
     for filename, content in files.items():
-        logging.debug("processing file: %s", filename)
+        log.debug("processing file: %s", filename)
 
         abs_file = os.path.join(args.C, filename)
         before_sha = None
         try:
-            with open(filename, "rb") as f:
-                logging.debug("Reading file: %s", abs_file)
+            with open(abs_file, "rb") as f:
+                log.debug("Reading file: %s", abs_file)
                 data = f.read()
                 before_sha = hashlib.sha256(data).hexdigest()
         except FileNotFoundError:
@@ -57,8 +60,11 @@ def main():
 
         content_sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+        log.debug("sha before: %s", before_sha)
+        log.debug("sha  after: %s", content_sha256)
+
         if before_sha != content_sha256:
-            logging.info("Updated %s", filename)
+            log.info("Updated %s", filename)
 
         with open(abs_file, "w") as stream:
             stream.write(content)
