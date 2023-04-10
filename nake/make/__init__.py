@@ -24,6 +24,8 @@ def render(languages):
         + "\n"
     )
 
+    added = False
+
     for language in languages:
         data = None
         try:
@@ -37,5 +39,9 @@ def render(languages):
             continue
 
         makefile += "\n" + data.strip()
+        added = True
+
+    if not added:
+        return None
 
     return makefile

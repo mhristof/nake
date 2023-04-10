@@ -63,6 +63,16 @@ def main():
         log.debug("processing file: %s", filename)
 
         abs_file = os.path.join(args.C, filename)
+
+        print("content", content)
+
+        if content is None and os.path.exists(abs_file):
+            os.remove(abs_file)
+            log.info("Removed %s", filename)
+
+        if content is None:
+            continue
+
         before_sha = None
         try:
             with open(abs_file, "rb") as f:
