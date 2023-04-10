@@ -47,6 +47,16 @@ func Languages(dest string, ignore []string) []string {
 				return nil
 			}
 
+			if strings.HasSuffix(path, ".md") {
+				langs["Markdown"] = 1
+
+				log.WithFields(log.Fields{
+					"path": path,
+				}).Debug("found Markdown file")
+
+				return nil
+			}
+
 			if strings.HasSuffix(path, "terragrunt.hcl") {
 				langs["terragrunt"] = 1
 				log.WithFields(log.Fields{
