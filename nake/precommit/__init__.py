@@ -28,8 +28,3 @@ def save(languages):
             logging.debug("No config for language: %s", language)
 
     return yaml.dump({"repos": repos}, default_flow_style=False)
-
-
-def file_as_bytes(file):
-    with file:
-        return file.read()
