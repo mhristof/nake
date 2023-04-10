@@ -33,7 +33,11 @@ def render(cwd, token, languages, defaults):
         stages = []
 
         if language == "terraform":
-            config, stages = terraform(cwd, config)
+            config, stages = terraform(config)
+            config, varStages = terraform_varfiles(
+                config, os.listdir(os.path.join(cwd, "vars"))
+            )
+            stages += varStages
         elif language == "docker":
             config, stages = docker(cwd, config)
 
@@ -139,7 +143,7 @@ def docker(cwd, config):
     return config, ["build", "push"]
 
 
-def terraform(cwd, config):
+def terraform(config):
     stages = ["lint"]
 
     config[".terraform"] = {
@@ -186,12 +190,14 @@ def terraform(cwd, config):
         },
     }
 
-    tfvars = os.listdir(os.path.join(cwd, "vars"))
+    return config, stages
 
+
+def terraform_varfiles(config, tfvars):
     if len(tfvars) == 0:
-        return config, stages
+        return config, []
 
-    stages += ["plan", "apply"]
+    stages = ["plan", "apply"]
 
     sorted_tfvars = sorted(tfvars, key=lambda x: 0 if x.startswith("test.") else 1)
 
@@ -243,16 +249,16 @@ apply:
             plan["apply"]["extends"] = f"{plan_job}-apply"
             plan["apply"]["needs"] += [f"{plan_job}-apply"]
 
-            if region is not None:
-                plan["plan"]["variables"] = {
-                    **plan["plan"].get("variables", {}),
-                    **{"AWS_REGION": region},
-                }
-                plan["apply"]["variables"] = {
-                    **plan["apply"].get("variables", {}),
-                    **{"AWS_REGION": region},
-                }
-                log.debug("Setting AWS_REGION to %s", region)
+        if region is not None:
+            plan["plan"]["variables"] = {
+                **plan["plan"].get("variables", {}),
+                **{"AWS_REGION": region},
+            }
+            plan["apply"]["variables"] = {
+                **plan["apply"].get("variables", {}),
+                **{"AWS_REGION": region},
+            }
+            log.debug("Setting AWS_REGION to %s", region)
 
         config = {
             **config,
