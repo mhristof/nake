@@ -6,7 +6,15 @@
 import argparse
 import logging
 import os
-import precommit
+
+try:
+    import precommit
+except ImportError:
+    import sys
+
+    sys.path.append(os.path.dirname(__file__))
+    import precommit
+
 import hashlib
 
 
@@ -26,25 +34,23 @@ def main():
 
     langs = languages(args.C)
     files = {
-        os.path.join(args.C, ".pre-commit-config.yaml"): precommit.save(langs),
+        os.path.join(args.C, ".pre-commit-config.yaml"): precommit.render(langs),
     }
 
     for filename, content in files.items():
         before_sha = None
-        with open(filename, "rb") as f:
-            logging.debug("Reading file: %s", filename)
-            data = f.read()
-            before_sha = hashlib.sha256(data).hexdigest()
+        try:
+            with open(filename, "rb") as f:
+                logging.debug("Reading file: %s", filename)
+                data = f.read()
+                before_sha = hashlib.sha256(data).hexdigest()
+        except FileNotFoundError:
+            pass
 
         content_sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
 
         if before_sha != content_sha256:
-            logging.info(
-                "Updated %s",
-                filename,
-                before_sha,
-                content_sha256,
-            )
+            logging.info("Updated %s", filename)
 
         with open(filename, "w") as stream:
             stream.write(content)

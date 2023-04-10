@@ -4,9 +4,6 @@ version = "0.1.0"
 description = "Project dotfiles"
 authors = ["Mike Christofilopoulos <mhristof@gmail.com>"]
 readme = "README.md"
-packages = [
-    { include = "nake" },
-]
 
 [tool.poetry.scripts]
 nake = 'nake.nake:main'
@@ -14,7 +11,6 @@ nake = 'nake.nake:main'
 [tool.poetry.dependencies]
 python = "^3.11"
 pyyaml = "^6.0"
-
 
 [build-system]
 requires = ["poetry-core"]
