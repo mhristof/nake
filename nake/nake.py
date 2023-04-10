@@ -9,11 +9,13 @@ import os
 
 try:
     import precommit
+    import make
 except ImportError:
     import sys
 
     sys.path.append(os.path.dirname(__file__))
     import precommit
+    import make
 
 import hashlib
 
@@ -25,23 +27,29 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
+    level = logging.INFO
 
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+    if args.verbose > 0:
+        level = logging.DEBUG
+
+    logging.basicConfig(level=level)
 
     logging.debug("Changing to directory: %s", args.C)
 
     langs = languages(args.C)
     files = {
-        os.path.join(args.C, ".pre-commit-config.yaml"): precommit.render(langs),
+        ".pre-commit-config.yaml": precommit.render(langs),
+        "Makefile": make.render(langs),
     }
 
     for filename, content in files.items():
+        logging.debug("processing file: %s", filename)
+
+        abs_file = os.path.join(args.C, filename)
         before_sha = None
         try:
             with open(filename, "rb") as f:
-                logging.debug("Reading file: %s", filename)
+                logging.debug("Reading file: %s", abs_file)
                 data = f.read()
                 before_sha = hashlib.sha256(data).hexdigest()
         except FileNotFoundError:
@@ -52,7 +60,7 @@ def main():
         if before_sha != content_sha256:
             logging.info("Updated %s", filename)
 
-        with open(filename, "w") as stream:
+        with open(abs_file, "w") as stream:
             stream.write(content)
 
 
@@ -72,6 +80,8 @@ def languages(directory):
                 ret |= {"terraform"}
             elif filename.endswith(".json"):
                 ret |= {"json"}
+            elif filename.startswith("Dockerfile"):
+                ret |= {"docker"}
 
     return ret
 
