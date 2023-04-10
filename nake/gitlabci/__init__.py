@@ -29,12 +29,13 @@ def render(cwd, token, languages, defaults):
         config = yaml.load("---\nstages: []\n")
 
     for language in languages:
+        stages = []
+
         if language == "terraform":
             config, stages = terraform(cwd, config, defaults)
         elif language == "docker":
             config, stages = docker(cwd, config, defaults)
 
-        log.debug("Adding stages: %s", stages)
         config["stages"] = list(set(config.get("stages", []) + stages))
         log.debug("Stages: %s", config["stages"])
 
@@ -149,13 +150,17 @@ def terraform(cwd, config, defaults):
                 "terraform init",
             ],
         },
+        **defaults.get(".terraform", {}),
     }
 
     config["fmt"] = {
         **config.get("fmt", {}),
         **{
             "stage": "lint",
-            "script": "terraform fmt -check=true -recursive",
+            "extends": [".terraform"],
+            "script": [
+                "terraform fmt -diff -check=true -recursive",
+            ],
         },
     }
 
@@ -172,6 +177,7 @@ def terraform(cwd, config, defaults):
                 "git diff --exit-code",
             ],
         },
+        **defaults.get("yor", {}),
     }
 
     tfvars = os.listdir(os.path.join(cwd, "vars"))
@@ -190,7 +196,7 @@ def terraform(cwd, config, defaults):
 
         log.debug("Found tfvar: %s", name)
 
-        plan = yaml.safe_load(
+        plan = yaml.load(
             f"""
 plan:
     resource_group: {name}
