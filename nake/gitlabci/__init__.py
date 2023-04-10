@@ -249,9 +249,19 @@ def yaml_to_string(data):
     buf = io.BytesIO()
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.dump(data, buf)
-    data.yaml_set_comment_before_after_key(1, before="\n")
 
-    return buf.getvalue().decode("utf-8")
+    new_lines = []
+
+    for line in buf.getvalue().decode("utf-8").splitlines():
+        if not line.startswith(" "):
+            new_lines.append("")
+            new_lines.append(line)
+
+            continue
+
+        new_lines.append(line)
+
+    return "\n".join(new_lines).strip()
 
 
 def validate(token, config):
@@ -265,7 +275,7 @@ def validate(token, config):
         json={"content": yaml_to_string(config)},
         headers={
             "Content-Type": "application/json",
-            "PRIVATE-TOKEN": "glpat-uFnbRGGHZRbb_N_x1z1i",
+            "PRIVATE-TOKEN": token,
         },
     )
 
