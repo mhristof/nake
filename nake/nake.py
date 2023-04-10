@@ -15,6 +15,7 @@ sys.path.append(os.path.dirname(__file__))
 import precommit
 import make
 import gitlabci
+import envrc
 
 
 log = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ def main():
         ".gitlab-ci.yml": gitlabci.render(
             args.C, args.gitlab_token, langs, conf[".gitlab-ci.yml"]
         ),
+        ".envrc": envrc.render(langs, conf),
     }
 
     for filename, content in files.items():
