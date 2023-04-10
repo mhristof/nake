@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 yaml = ruamel.yaml.YAML()
 
 
-def render(cwd, token, languages):
+def render(cwd, token, languages, defaults):
     config = {}
     try:
         with open(os.path.join(cwd, ".gitlab-ci.yml"), "r") as stream:
@@ -26,15 +26,13 @@ def render(cwd, token, languages):
         pass
 
     if config is None:
-        config = {
-            "stages": [],
-        }
+        config = yaml.load("---\nstages: []\n")
 
     for language in languages:
         if language == "terraform":
-            config, stages = terraform(cwd, config)
+            config, stages = terraform(cwd, config, defaults)
         elif language == "docker":
-            config, stages = docker(cwd, config)
+            config, stages = docker(cwd, config, defaults)
 
         log.debug("Adding stages: %s", stages)
         config["stages"] = list(set(config.get("stages", []) + stages))
@@ -83,12 +81,11 @@ def stages_compare(a, b):
     return weights.get(a, 0) - weights.get(b, 0)
 
 
-def docker(cwd, config):
+def docker(cwd, config, defaults):
     config["variables"] = {
         **config.get("variables", {}),
+        **defaults["variables"],
         **{
-            "AWS_ACCOUNT_ID": "151067621124",
-            "AWS_REGION": "eu-west-2",
             "ECR": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com",
         },
     }
@@ -136,7 +133,7 @@ def docker(cwd, config):
     return config, ["build", "push"]
 
 
-def terraform(cwd, config):
+def terraform(cwd, config, defaults):
     stages = ["lint"]
 
     config[".terraform"] = {
@@ -248,11 +245,16 @@ apply:
 def yaml_to_string(data):
     buf = io.BytesIO()
     yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.preserve_quotes = True
+    yaml.width = 4096
     yaml.dump(data, buf)
 
     new_lines = []
 
     for line in buf.getvalue().decode("utf-8").splitlines():
+        if line == "":
+            continue
+
         if not line.startswith(" "):
             new_lines.append("")
             new_lines.append(line)
@@ -261,7 +263,7 @@ def yaml_to_string(data):
 
         new_lines.append(line)
 
-    return "\n".join(new_lines).strip()
+    return "\n".join(new_lines).strip() + "\n"
 
 
 def validate(token, config):
@@ -283,4 +285,7 @@ def validate(token, config):
         raise Exception(f"Failed to validate config with status code {req.status_code}")
 
     if req.json()["status"] != "valid":
+        with open("gitlab-ci.yml", "w") as f:
+            f.write(yaml_to_string(config))
+
         raise Exception(f"Failed to validate config with error {req.json()['errors']}")

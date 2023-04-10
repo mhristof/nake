@@ -7,6 +7,7 @@ import argparse
 import logging
 import os
 import hashlib
+import yaml
 
 import sys
 
@@ -27,6 +28,13 @@ def main():
         "--gitlab-token", default=os.getenv("GITLAB_TOKEN"), help="Gitlab token"
     )
 
+    parser.add_argument(
+        "-c",
+        "--config",
+        default=os.path.join(os.getenv("XDG_CONFIG_HOME"), "nake.yml"),
+        help="Config file",
+    )
+
     args = parser.parse_args()
 
     level = logging.INFO
@@ -38,11 +46,17 @@ def main():
 
     log.debug("Changing to directory: %s", args.C)
 
+    conf = {}
+    with open(args.config, "r") as stream:
+        conf = yaml.safe_load(stream)
+
     langs = languages(args.C)
     files = {
         ".pre-commit-config.yaml": precommit.render(langs),
         "Makefile": make.render(langs),
-        ".gitlab-ci.yml": gitlabci.render(args.C, args.gitlab_token, langs),
+        ".gitlab-ci.yml": gitlabci.render(
+            args.C, args.gitlab_token, langs, conf[".gitlab-ci.yml"]
+        ),
     }
 
     for filename, content in files.items():
