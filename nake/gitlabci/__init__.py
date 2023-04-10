@@ -5,37 +5,42 @@
 
 
 import logging
+import functools
 import requests
+import io
 import json
-import yaml
+import ruamel.yaml
 import os
 from functools import cmp_to_key
 
 log = logging.getLogger(__name__)
+yaml = ruamel.yaml.YAML()
 
 
 def render(cwd, token, languages):
     config = {}
     try:
         with open(os.path.join(cwd, ".gitlab-ci.yml"), "r") as stream:
-            config = yaml.safe_load(stream)
+            config = yaml.load(stream)
     except FileNotFoundError:
         pass
 
     if config is None:
         config = {
-            "stages": [
-                "lint",
-                "plan",
-                "apply",
-                "release",
-            ]
+            "stages": [],
         }
 
     for language in languages:
         if language == "terraform":
-            config = terraform(cwd, config)
+            config, stages = terraform(cwd, config)
+        elif language == "docker":
+            config, stages = docker(cwd, config)
 
+        log.debug("Adding stages: %s", stages)
+        config["stages"] = list(set(config.get("stages", []) + stages))
+        log.debug("Stages: %s", config["stages"])
+
+    config["stages"] = list(set(config.get("stages", []) + ["release"]))
     config["release"] = {
         **config.get("release", {}),
         **{
@@ -46,14 +51,94 @@ def render(cwd, token, languages):
         },
     }
 
+    config["stages"].sort(key=functools.cmp_to_key(stages_compare))
+
     validate(token, config)
 
-    return "---\n" + yaml.dump(
-        config, Dumper=MyDumper, sort_keys=False, default_flow_style=False
+    return "---\n" + yaml_to_string(config)
+
+
+def stages_compare(a, b):
+    weights = {
+        "lint": 10,
+        "plan": 20,
+        "build": 30,
+        "apply": 40,
+        "test": 50,
+        "push": 60,
+        "release": 70,
+    }
+
+    log.debug(
+        "Comparing %s(%d) and %s(%d): %d"
+        % (
+            a,
+            weights.get(a, 0),
+            b,
+            weights.get(b, 0),
+            weights.get(a, 0) - weights.get(b, 0),
+        )
     )
+
+    return weights.get(a, 0) - weights.get(b, 0)
+
+
+def docker(cwd, config):
+    config["variables"] = {
+        **config.get("variables", {}),
+        **{
+            "AWS_ACCOUNT_ID": "151067621124",
+            "AWS_REGION": "eu-west-2",
+            "ECR": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com",
+        },
+    }
+
+    config["image"] = config.get("image", "docker:latest")
+
+    config[".docker-auth"] = {
+        **config.get(".docker-auth", {}),
+        **{
+            "before_script": [
+                "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR",
+            ],
+        },
+    }
+
+    project_name = os.path.basename(cwd).replace("docker-", "")
+    config["build"] = {
+        **config.get("build", {}),
+        **{
+            "extends": [".docker-auth"],
+            "stage": "build",
+            "script": [
+                "apt install -y make",
+                "make build",
+            ],
+        },
+    }
+
+    config["push"] = {
+        **config.get("push", {}),
+        **{
+            "extends": [".docker-auth"],
+            "stage": "push",
+            "script": [
+                "apt install -y make",
+                "make build",
+                "docker tag $ECR/%s:$CI_COMMIT_SHORT_SHA $ECR/${project_name}:${CI_COMMIT_TAG/v/}"
+                % project_name,
+                "docker push $ECR/%s:${CI_COMMIT_TAG/v/}" % project_name,
+            ],
+            "rules": [{"if": "$CI_COMMIT_TAG"}],
+        },
+    }
+
+    return config, ["build", "push"]
 
 
 def terraform(cwd, config):
+    stages = ["lint"]
+
     config[".terraform"] = {
         **config.get(".terraform", {}),
         **{
@@ -95,7 +180,9 @@ def terraform(cwd, config):
     tfvars = os.listdir(os.path.join(cwd, "vars"))
 
     if len(tfvars) == 0:
-        return config
+        return config, stages
+
+    stages += ["plan", "apply"]
 
     sorted_tfvars = sorted(tfvars, key=lambda x: 0 if x.startswith("test.") else 1)
 
@@ -155,18 +242,27 @@ apply:
 
         log.debug("Plan: %s", plan)
 
-    return config
+    return config, stages
+
+
+def yaml_to_string(data):
+    buf = io.BytesIO()
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.dump(data, buf)
+    data.yaml_set_comment_before_after_key(1, before="\n")
+
+    return buf.getvalue().decode("utf-8")
 
 
 def validate(token, config):
-    if token == "":
+    if token is None:
         log.warning("No GitLab token provided, skipping validation")
 
         return
 
     req = requests.post(
         "https://gitlab.com/api/v4/ci/lint?include_merged_yaml=true",
-        json={"content": yaml.dump(config)},
+        json={"content": yaml_to_string(config)},
         headers={
             "Content-Type": "application/json",
             "PRIVATE-TOKEN": "glpat-uFnbRGGHZRbb_N_x1z1i",
@@ -178,13 +274,3 @@ def validate(token, config):
 
     if req.json()["status"] != "valid":
         raise Exception(f"Failed to validate config with error {req.json()['errors']}")
-
-
-class MyDumper(yaml.SafeDumper):
-    # HACK: insert blank lines between top-level objects
-    # inspired by https://stackoverflow.com/a/44284819/3786245
-    def write_line_break(self, data=None):
-        super().write_line_break(data)
-
-        if len(self.indents) == 1:
-            super().write_line_break()
