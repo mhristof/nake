@@ -14,16 +14,16 @@ repos:
         name: terraform-lock
         language: system
         entry: /bin/bash -c 'terraform providers lock -platform=windows_amd64 -platform=darwin_amd64 -platform=linux_amd64'
-        files: "(.terraform.lock.hcl|version.tf)"
         types:
           - terraform
+        files: (.terraform.lock.hcl|version.tf)
   - repo: local
     hooks:
       - id: yor
         name: yor
         language: system
         entry: /bin/bash -c 'yor tag --tag-local-modules=true --directory .'
-        stages:
-          - push
         types:
           - terraform
+        stages:
+          - push

@@ -1,0 +1,35 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+# vim:fenc=utf-8
+#
+
+import logging
+import yaml
+import os
+
+
+def save(languages):
+    default_path = os.path.join(os.path.dirname(__file__), "default.yml")
+    logging.debug("Loading default config from: %s", default_path)
+
+    default = None
+    with open(default_path, "r") as stream:
+        default = yaml.safe_load(stream)
+
+    repos = default["repos"]
+
+    for language in languages:
+        try:
+            with open(
+                os.path.join(os.path.dirname(__file__), language + ".yml"), "r"
+            ) as stream:
+                repos += yaml.safe_load(stream)["repos"]
+        except FileNotFoundError:
+            logging.debug("No config for language: %s", language)
+
+    return yaml.dump({"repos": repos}, default_flow_style=False)
+
+
+def file_as_bytes(file):
+    with file:
+        return file.read()

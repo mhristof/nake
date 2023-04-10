@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "nake"
+version = "0.1.0"
+description = "Project dotfiles"
+authors = ["Mike Christofilopoulos <mhristof@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "nake" },
+]
+
+[tool.poetry.scripts]
+nake = 'nake.nake:main'
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
