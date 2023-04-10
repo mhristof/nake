@@ -32,7 +32,7 @@ var RulesLib = map[string][]Rule{
 		{
 			Help:    "Show this help",
 			Targets: "help",
-			Recipe:  "@grep '.*:.*##' Makefile | grep -v grep  | sort | sed 's/:.* ##/:/g' | column -t -s:",
+			Recipe:  "@grep '.*:.*##' Makefile | grep -v grep | sort | sed 's/:.* ##/:/g' | column -t -s:",
 			Phony:   true,
 		},
 	},
@@ -98,12 +98,35 @@ var RulesLib = map[string][]Rule{
 	},
 	"Docker": {
 		{
+			Default: "build",
+		},
+		{
+			Variable: heredoc.Doc(`
+				CI_JOB_STARTED_AT ?= $(shell date --iso-8601=seconds)
+				CI_COMMIT_SHA ?= $(shell git rev-parse HEAD)
+				CI_JOB_URL ?= $(USER)@$(shell hostname)
+				CI_PROJECT_NAME ?= $(shell basename $(shell pwd))
+				PROJECT_NAME ?= $(shell sed 's/docker-//' <<< $(CI_PROJECT_NAME))
+				CI_PROJECT_URL ?= $(shell git config --get remote.origin.url)
+				AWS_REGION ?= $(shell yq .variables.AWS_REGION .gitlab-ci.yml)
+				ECR ?= $(shell yq .variables.AWS_ACCOUNT_ID .gitlab-ci.yml).dkr.ecr.$(AWS_REGION).amazonaws.com
+				BASE_VERSION := $(shell grep FROM Dockerfile | tail -1  | awk '{print $$2}')`),
+		},
+		{
 			Targets:       ".build",
-			Prerequisites: "Dockerfile",
+			Prerequisites: "Dockerfile $(shell grep COPY Dockerfile | cut -d ' ' -f2)",
 			Recipe: heredoc.Doc(`
-				docker build -t $(shell basename $(PWD) .
-				touch .build
-			`),
+				docker build --progress=tty \
+						--label=org.opencontainers.image.base.version=$(BASE_VERSION) \
+						--label=org.opencontainers.image.created=$(CI_JOB_STARTED_AT) \
+						--label=org.opencontainers.image.revision=$(CI_COMMIT_SHA) \
+						--label=org.opencontainers.image.source=$(CI_JOB_URL) \
+						--label=org.opencontainers.image.title=$(CI_PROJECT_NAME) \
+						--label=org.opencontainers.image.url=$(CI_PROJECT_URL) \
+						--label=org.opencontainers.image.vendor=AL40 \
+						--label=org.opencontainers.image.version=$(CI_COMMIT_SHA) \
+						-t $(ECR)/$(PROJECT_NAME) .
+					touch .build`),
 		},
 		{
 			Targets:       "build",
@@ -114,13 +137,13 @@ var RulesLib = map[string][]Rule{
 			Targets:       "run",
 			Prerequisites: ".build",
 			Help:          "Run the image",
-			Recipe:        "docker run $(shell basename $(PWD))",
+			Recipe:        "docker run $(ECR)/$(PROJECT_NAME)",
 		},
 		{
 			Targets:       "bash",
 			Prerequisites: ".build",
 			Help:          "Drop a shell into the image",
-			Recipe:        "docker run -it --command /bin/bash $(shell basename $(PWD))",
+			Recipe:        "docker run -it --command /bin/bash $(ECR)/$(PROJECT_NAME)",
 		},
 	},
 	"terragrunt": {
@@ -234,9 +257,7 @@ func (r Rules) printHeader() {
 	fmt.Println(heredoc.Doc(`
 		MAKEFLAGS += --warn-undefined-variables
 		SHELL := /bin/bash
-		ifeq ($(word 1,$(subst ., ,$(MAKE_VERSION))),4)
 		.SHELLFLAGS := -eu -o pipefail -c
-		endif
 		.ONESHELL:
 	`),
 	)

@@ -56,6 +56,16 @@ func Languages(dest string, ignore []string) []string {
 				return nil
 			}
 
+			if strings.HasPrefix(filepath.Base(path), "Dockerfile") {
+				langs["Docker"] = 1
+
+				log.WithFields(log.Fields{
+					"path": path,
+				}).Debug("found Dockerfile")
+
+				return nil
+			}
+
 			lang, _ := enry.GetLanguageByExtension(path)
 			if _, ok := ignored[lang]; ok {
 				return nil
