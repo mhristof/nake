@@ -1,10 +1,29 @@
 ---
 repos:
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.50.0
+    rev: v1.77.2
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
       - id: terraform_tflint
-      - id: checkov
-      - id: terraform_docs_replace
+      - id: terraform_checkov
+      - id: terraform_docs
+  - repo: local
+    hooks:
+      - id: terraform-lock
+        name: terraform-lock
+        language: system
+        entry: /bin/bash -c 'terraform providers lock -platform=windows_amd64 -platform=darwin_amd64 -platform=linux_amd64'
+        files: "(.terraform.lock.hcl|version.tf)"
+        types:
+          - terraform
+  - repo: local
+    hooks:
+      - id: yor
+        name: yor
+        language: system
+        entry: /bin/bash -c 'yor tag --tag-local-modules=true --directory .'
+        stages:
+          - push
+        types:
+          - terraform

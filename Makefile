@@ -37,3 +37,7 @@ install: bin/nake.$(UNAME) ## Install the binary
 .PHONY: fixtures
 fixtures:
 	go test ./... -generate
+
+.PHONY: bump
+bump: ## Bump the versions
+	find ./precommit/repos -name '*.yaml' | xargs -n1 --no-run-if-empty pre-commit autoupdate --config
