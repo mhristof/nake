@@ -8,6 +8,7 @@ import logging
 import functools
 import requests
 import io
+import re
 import json
 import ruamel.yaml
 import os
@@ -32,9 +33,9 @@ def render(cwd, token, languages, defaults):
         stages = []
 
         if language == "terraform":
-            config, stages = terraform(cwd, config, defaults)
+            config, stages = terraform(cwd, config)
         elif language == "docker":
-            config, stages = docker(cwd, config, defaults)
+            config, stages = docker(cwd, config)
 
         config["stages"] = list(set(config.get("stages", []) + stages))
         log.debug("Stages: %s", config["stages"])
@@ -51,6 +52,11 @@ def render(cwd, token, languages, defaults):
     }
 
     config["stages"].sort(key=functools.cmp_to_key(stages_compare))
+
+    for k, v in defaults.items():
+        for k2, v2 in config.items():
+            if re.match(k, k2):
+                config[k2] = {**v2, **v}
 
     validate(token, config)
 
@@ -82,10 +88,9 @@ def stages_compare(a, b):
     return weights.get(a, 0) - weights.get(b, 0)
 
 
-def docker(cwd, config, defaults):
+def docker(cwd, config):
     config["variables"] = {
         **config.get("variables", {}),
-        **defaults["variables"],
         **{
             "ECR": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com",
         },
@@ -134,7 +139,7 @@ def docker(cwd, config, defaults):
     return config, ["build", "push"]
 
 
-def terraform(cwd, config, defaults):
+def terraform(cwd, config):
     stages = ["lint"]
 
     config[".terraform"] = {
@@ -150,7 +155,6 @@ def terraform(cwd, config, defaults):
                 "terraform init",
             ],
         },
-        **defaults.get(".terraform", {}),
     }
 
     config["fmt"] = {
@@ -168,8 +172,11 @@ def terraform(cwd, config, defaults):
         **config.get("yor", {}),
         **{
             "image": {
-                "name": "bridgecrew/yor:latest",
-                "entrypoint": ["/bin/sh", "-c"],
+                "name": "bridgecrew/yor:0.1.170",
+                "entrypoint": [
+                    "/usr/bin/env",
+                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                ],
             },
             "stage": "lint",
             "script": [
@@ -177,7 +184,6 @@ def terraform(cwd, config, defaults):
                 "git diff --exit-code",
             ],
         },
-        **defaults.get("yor", {}),
     }
 
     tfvars = os.listdir(os.path.join(cwd, "vars"))
@@ -193,8 +199,9 @@ def terraform(cwd, config, defaults):
 
     for tfvar in sorted_tfvars:
         name = os.path.splitext(tfvar)[0]
+        region = get_aws_region(name)
 
-        log.debug("Found tfvar: %s", name)
+        log.debug("Found tfvar: %s with region: %s", name, region)
 
         plan = yaml.load(
             f"""
@@ -219,6 +226,7 @@ apply:
             plan_job = name
             plan["plan"]["extends"] = ".terraform"
             plan["plan"]["stage"] = "plan"
+            plan["plan"]["needs"] = []
             plan["plan"]["script"] = [
                 "terraform plan -out terraform.tfplan",
                 """terraform show --json terraform.tfplan | jq -r '([.resource_changes[]?.change.actions?]|flatten)|{"create":(map(select(.=="create"))|length),"update":(map(select(.=="update"))|length),"delete":(map(select(.=="delete"))|length)}' > report.json""",
@@ -235,6 +243,17 @@ apply:
             plan["apply"]["extends"] = f"{plan_job}-apply"
             plan["apply"]["needs"] += [f"{plan_job}-apply"]
 
+            if region is not None:
+                plan["plan"]["variables"] = {
+                    **plan["plan"].get("variables", {}),
+                    **{"AWS_REGION": region},
+                }
+                plan["apply"]["variables"] = {
+                    **plan["apply"].get("variables", {}),
+                    **{"AWS_REGION": region},
+                }
+                log.debug("Setting AWS_REGION to %s", region)
+
         config = {
             **config,
             **{
@@ -249,9 +268,11 @@ apply:
 
 
 def yaml_to_string(data):
+    yaml = ruamel.yaml.YAML()
     buf = io.BytesIO()
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.preserve_quotes = True
+    yaml.Representer = NonAliasingRTRepresenter
     yaml.width = 4096
     yaml.dump(data, buf)
 
@@ -295,3 +316,66 @@ def validate(token, config):
             f.write(yaml_to_string(config))
 
         raise Exception(f"Failed to validate config with error {req.json()['errors']}")
+
+
+def is_aws_regions(region):
+    all_regions = """\
+        us-east-2
+        us-east-1
+        us-west-1
+        us-west-2
+        af-south-1
+        ap-east-1
+        ap-south-2
+        ap-southeast-3
+        ap-southeast-4
+        ap-south-1
+        ap-northeast-3
+        ap-northeast-2
+        ap-southeast-1
+        ap-southeast-2
+        ap-northeast-1
+        ca-central-1
+        eu-central-1
+        eu-west-1
+        eu-west-2
+        eu-south-1
+        eu-west-3
+        eu-south-2
+        eu-north-1
+        eu-central-2
+        me-south-1
+        me-central-1
+        sa-east-1
+    """.strip().split()
+
+    log.debug("Regions: %s", all_regions)
+
+    ret = region in all_regions
+    log.debug("region %s (is region: %s)", region, ret)
+    return ret
+
+
+def get_aws_region(name):
+    region = None
+
+    try:
+        region = "-".join(name.split("-")[1:])
+    except IndexError:
+        log.debug("Failed to get region for %s", name)
+        return None
+
+    if region is None:
+        log.debug("Failed to get region for %s", name)
+        return None
+
+    if not is_aws_regions(region):
+        log.debug("Not a region: %s", region)
+        return None
+
+    return region
+
+
+class NonAliasingRTRepresenter(ruamel.yaml.representer.RoundTripRepresenter):
+    def ignore_aliases(self, data):
+        return True

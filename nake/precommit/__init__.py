@@ -6,6 +6,7 @@
 import logging
 import yaml
 import os
+from gitlabci import yaml_to_string
 
 log = logging.getLogger(__name__)
 
@@ -29,4 +30,4 @@ def render(languages):
         except FileNotFoundError:
             log.debug("No config for language: %s", language)
 
-    return yaml.dump({"repos": repos}, default_flow_style=False)
+    return yaml_to_string({"repos": repos})
