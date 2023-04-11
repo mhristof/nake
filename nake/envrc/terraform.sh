@@ -32,7 +32,10 @@ GIT_ROOT=$(git rev-parse --show-toplevel)
 TF_VAR_project="$(basename "$GIT_ROOT" | sed 's/-infra//g')"
 export TF_VAR_project
 
+#{% if gitlab_token %}
+
 if op --version &>/dev/null; then
     GITLAB_TOKEN="$(op --cache item get GITLAB_TOKEN --fields label=password)"
     export GITLAB_TOKEN
 fi
+# {% endif %}

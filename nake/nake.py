@@ -30,7 +30,6 @@ def main():
         "--gitlab-token", default=os.getenv("GITLAB_TOKEN"), help="Gitlab token"
     )
 
-    # version
     parser.add_argument(
         "--version",
         action="version",
@@ -59,14 +58,16 @@ def main():
     with open(args.config, "r") as stream:
         conf = yaml.safe_load(stream)
 
-    langs = languages(args.C)
+    langs, features = languages(args.C)
+
+    log.info("features: %s", features)
     files = {
         ".pre-commit-config.yaml": precommit.render(langs),
         "Makefile": make.render(langs),
         ".gitlab-ci.yml": gitlabci.render(
             args.C, args.gitlab_token, langs, conf[".gitlab-ci.yml"]
         ),
-        ".envrc": envrc.render(langs, conf),
+        ".envrc": envrc.render(langs, conf, features),
     }
 
     for filename, content in files.items():
@@ -109,19 +110,30 @@ def file_as_bytes(file):
 
 def languages(directory):
     ret = set()
+    features = set()
 
     for dirpath, dirnames, filenames in os.walk(directory):
         for filename in filenames:
             if filename.endswith(".py"):
                 ret |= {"python"}
             elif filename.endswith(".tf"):
+                features |= has_gitlab_provider(os.path.join(dirpath, filename))
                 ret |= {"terraform"}
             elif filename.endswith(".json"):
                 ret |= {"json"}
             elif filename.startswith("Dockerfile"):
                 ret |= {"docker"}
 
-    return ret
+    return ret, features
+
+
+def has_gitlab_provider(filename):
+    with open(filename, "r") as stream:
+        for line in stream:
+            if "provider" in line and "gitlab" in line:
+                return {"terraform-gitlab-provider"}
+
+    return set()
 
 
 if __name__ == "__main__":

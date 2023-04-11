@@ -316,7 +316,7 @@ def rec_sort(d):
     if isinstance(d, dict):
         res = dict()
 
-        print("sorting", d.keys())
+        # print("sorting", d.keys())
 
         keys = list(d.keys())
         keys.sort(key=functools.cmp_to_key(stages_compare))

@@ -10,7 +10,7 @@ import jinja2
 log = logging.getLogger(__name__)
 
 
-def render(languages, defaults):
+def render(languages, defaults, features):
     default = "# vi: ft=bash\n"
 
     for language in languages:
@@ -20,9 +20,12 @@ def render(languages, defaults):
                 default += jinja2.Template(template).render(
                     {
                         "company_name": defaults["company"]["name"],
+                        "gitlab_token": "terraform-gitlab-provider" in features,
                     }
                 )
         except FileNotFoundError:
             log.debug("No config for language: %s", language)
+
+    default = default.replace("#\n", "").replace("\n\n\n", "\n\n")
 
     return default.strip() + "\n"
