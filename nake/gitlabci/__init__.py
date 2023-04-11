@@ -69,6 +69,7 @@ def render(cwd, token, languages, defaults):
 
 def stages_compare(a, b):
     weights = {
+        ## stages
         "lint": 10,
         "plan": 20,
         "build": 30,
@@ -76,6 +77,32 @@ def stages_compare(a, b):
         "test": 50,
         "push": 60,
         "release": 70,
+        ### job fields
+        "extends": 100,
+        "stage": 150,
+        "needs": 151,
+        "image": 152,
+        "variables": 200,
+        "before_script": 300,
+        "script": 301,
+        "resource_group": 350,
+        "environment": 351,
+        "artifacts": 352,
+        "when": 353,
+        "tags": 400,
+        ### image fields
+        "name": 1000,
+        "entrypoint": 1100,
+        ### jobs
+        "stages": 2000,
+        ".terraform": 2010,
+        "fmt": 2100,
+        "yor": 2200,
+        "test-plan": 2300,
+        "test-apply": 2400,
+        "prod-plan": 2500,
+        "prod-apply": 2600,
+        "release": 2999,
     }
 
     log.debug(
@@ -89,7 +116,19 @@ def stages_compare(a, b):
         )
     )
 
-    return weights.get(a, 0) - weights.get(b, 0)
+    return weights.get(a, default_weight(weights, a)) - weights.get(
+        b, default_weight(weights, b)
+    )
+
+
+def default_weight(weights, a):
+    if a not in weights and a.startswith("prod-") and a.endswith("-plan"):
+        return weights["prod-plan"] + 1
+
+    if a not in weights and a.startswith("prod-") and a.endswith("-apply"):
+        return weights["prod-apply"] + 1
+
+    return 0
 
 
 def docker(cwd, config):
@@ -273,7 +312,30 @@ apply:
     return config, stages
 
 
+def rec_sort(d):
+    if isinstance(d, dict):
+        res = dict()
+
+        print("sorting", d.keys())
+
+        keys = list(d.keys())
+        keys.sort(key=functools.cmp_to_key(stages_compare))
+
+        for k in keys:
+            res[k] = rec_sort(d[k])
+
+        return res
+
+    if isinstance(d, list):
+        for idx, elem in enumerate(d):
+            d[idx] = rec_sort(elem)
+
+    return d
+
+
 def yaml_to_string(data):
+    data = rec_sort(data)
+
     yaml = ruamel.yaml.YAML()
     buf = io.BytesIO()
     yaml.indent(mapping=2, sequence=4, offset=2)
