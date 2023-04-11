@@ -8,6 +8,7 @@ import logging
 import os
 import hashlib
 import yaml
+import importlib.metadata
 
 import sys
 
@@ -27,6 +28,13 @@ def main():
     parser.add_argument("-v", "--verbose", default=0, action="count", help="Verbose")
     parser.add_argument(
         "--gitlab-token", default=os.getenv("GITLAB_TOKEN"), help="Gitlab token"
+    )
+
+    # version
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s " + importlib.metadata.version("nake"),
     )
 
     parser.add_argument(
