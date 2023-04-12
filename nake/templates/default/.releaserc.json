@@ -1,0 +1,13 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "releaseRules": [{ "message": "*", "release": "patch" }]
+      }
+    ],
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/gitlab"]
+  ]
+}

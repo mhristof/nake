@@ -16,16 +16,21 @@ def files(directory):
     remote = git_remote(directory)
     log.debug("Remote: %s", remote)
 
+    files = render("default")
+
     if "-infra" in remote:
-        return terraform()
+        files.update(render("terraform"))
 
-    return {}
+    if "docker-" in remote:
+        files.update(render("docker"))
+
+    return files
 
 
-def terraform():
+def render(folder):
     ret = {}
 
-    template_dir = os.path.join(os.path.dirname(__file__), "terraform")
+    template_dir = os.path.join(os.path.dirname(__file__), folder)
 
     log.debug("Reading templates from: %s", template_dir)
 
@@ -45,7 +50,7 @@ def terraform():
 
 
 def git_remote(directory):
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(strict=False)
     config.read(os.path.join(directory, ".git", "config"))
 
     return config.get('remote "origin"', "url")

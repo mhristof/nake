@@ -95,13 +95,18 @@ def stages_compare(a, b):
         "entrypoint": 1100,
         ### jobs
         "stages": 2000,
-        ".terraform": 2010,
+        "image": 2005,
+        "variables": 2010,
+        ".terraform": 2015,
+        ".docker-auth": 2020,
         "fmt": 2100,
         "yor": 2200,
+        "build": 2250,
         "test-plan": 2300,
         "test-apply": 2400,
         "prod-plan": 2500,
         "prod-apply": 2600,
+        "push": 2700,
         "release": 2999,
     }
 
