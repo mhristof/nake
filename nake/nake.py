@@ -17,6 +17,7 @@ import precommit
 import make
 import gitlabci
 import envrc
+import templates
 
 
 log = logging.getLogger(__name__)
@@ -58,6 +59,8 @@ def main():
     with open(args.config, "r") as stream:
         conf = yaml.safe_load(stream)
 
+    save(templates.files(args.C), args)
+
     langs, features = languages(args.C)
 
     log.info("features: %s", features)
@@ -70,6 +73,10 @@ def main():
         ".envrc": envrc.render(langs, conf, features),
     }
 
+    save(files, args)
+
+
+def save(files, args):
     for filename, content in files.items():
         log.debug("processing file: %s", filename)
 
@@ -84,6 +91,7 @@ def main():
 
         before_sha = None
         try:
+            os.makedirs(os.path.dirname(abs_file), exist_ok=True)
             with open(abs_file, "rb") as f:
                 log.debug("Reading file: %s", abs_file)
                 data = f.read()
