@@ -16,12 +16,15 @@ def render(languages, defaults):
     makefile = (
         dedent(
             """
-        MAKEFLAGS += --warn-undefined-variables --jobs=$(shell nproc)
-        SHELL := /bin/bash
-        .SHELLFLAGS := -eu -o pipefail -c
-        .DEFAULT_GOAL := build
-        .ONESHELL:
-        """
+            MAKEFLAGS += --warn-undefined-variables --jobs=$(shell nproc)
+            SHELL := /bin/bash
+            .SHELLFLAGS := -eu -o pipefail -c
+            .DEFAULT_GOAL := build
+            .ONESHELL:
+
+            help:           ## Show this help.
+                @grep '.*:.*##' Makefile | grep -v grep  | sort | sed 's/:.* ##/:/g' | column -t -s:
+            """
         ).strip()
         + "\n"
     )
