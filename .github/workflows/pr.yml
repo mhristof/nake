@@ -1,8 +1,7 @@
 ---
 name: Pull Request on Branch Push
 
-
-'on':
+"on":
   - push
 
 jobs:

@@ -30,3 +30,14 @@ repos:
         types:
           - text
         name: codespell
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: bash
+        args:
+          - -c
+          - "pytest **/*/test.py -v"
+        language: system
+        pass_filenames: false
+        always_run: true
