@@ -5,12 +5,14 @@
 
 import logging
 from textwrap import dedent
+import jinja2
 import os
+import re
 
 log = logging.getLogger(__name__)
 
 
-def render(languages):
+def render(languages, defaults):
     makefile = (
         dedent(
             """
@@ -33,6 +35,7 @@ def render(languages):
                 os.path.join(os.path.dirname(__file__), language + ".mk"), "r"
             ) as stream:
                 data = stream.read()
+                data = jinja2.Template(data).render(defaults)
         except FileNotFoundError:
             log.debug("No config for language: %s", language)
 
@@ -44,4 +47,9 @@ def render(languages):
     if not added:
         return None
 
-    return makefile
+    lines = []
+
+    for line in makefile.splitlines():
+        lines += [re.sub(r"^    ", "	", line)]
+
+    return "\n".join(lines)

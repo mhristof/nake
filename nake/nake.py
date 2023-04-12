@@ -66,7 +66,7 @@ def main():
     log.info("features: %s", features)
     files = {
         ".pre-commit-config.yaml": precommit.render(langs),
-        "Makefile": make.render(langs),
+        "Makefile": make.render(langs, conf),
         ".gitlab-ci.yml": gitlabci.render(
             args.C, args.gitlab_token, langs, conf[".gitlab-ci.yml"]
         ),
