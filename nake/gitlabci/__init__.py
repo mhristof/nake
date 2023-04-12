@@ -176,8 +176,7 @@ def docker(cwd, config):
             "script": [
                 "apt install -y make",
                 "make build",
-                "docker tag $ECR/%s:$CI_COMMIT_SHORT_SHA $ECR/${project_name}:${CI_COMMIT_TAG/v/}"
-                % project_name,
+                f"docker tag $ECR/{project_name} $ECR/{project_name}:${{CI_COMMIT_TAG/v/}}",
                 "docker push $ECR/%s:${CI_COMMIT_TAG/v/}" % project_name,
             ],
             "rules": [{"if": "$CI_COMMIT_TAG"}],
