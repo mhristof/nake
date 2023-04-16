@@ -34,3 +34,14 @@ def test_terraform_variables():
         ]
         == "test-plan"
     )
+
+
+def test_stages_compare():
+    cases = {
+        "simple job": (["stage", "script", "image"], ["stage", "image", "script"]),
+    }
+
+    for name, case in cases.items():
+        case[0].sort(key=functools.cmp_to_key(stages_compare))
+
+        assert case[0] == case[1]

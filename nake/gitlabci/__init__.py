@@ -68,8 +68,7 @@ def render(cwd, token, languages, defaults):
 
 
 def stages_compare(a, b):
-    weights = {
-        ## stages
+    stages = {
         "lint": 10,
         "plan": 20,
         "build": 30,
@@ -77,7 +76,9 @@ def stages_compare(a, b):
         "test": 50,
         "push": 60,
         "release": 70,
-        ### job fields
+    }
+
+    job = {
         "extends": 100,
         "stage": 150,
         "needs": 151,
@@ -90,12 +91,18 @@ def stages_compare(a, b):
         "artifacts": 352,
         "when": 353,
         "tags": 400,
+    }
+    image = {
         ### image fields
         "name": 1000,
         "entrypoint": 1100,
+    }
+
+    jobs = {
         ### jobs
         "stages": 2000,
         "image": 2005,
+        "workflow": 2007,
         "variables": 2010,
         ".terraform": 2015,
         ".docker-auth": 2020,
@@ -109,6 +116,23 @@ def stages_compare(a, b):
         "push": 2700,
         "release": 2999,
     }
+
+    if a in stages and b in stages:
+        weights = stages
+    elif a in job and b in job:
+        weights = job
+    elif a in image and b in image:
+        weights = image
+    elif (
+        a in jobs
+        and b in jobs
+        or a.endswith("-plan")
+        or a.endswith("-apply")
+        or b.endswith("-apply")
+    ):
+        weights = jobs
+    else:
+        weights = {}
 
     log.debug(
         "Comparing %s(%d) and %s(%d): %d"
