@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 yaml = ruamel.yaml.YAML()
 
 
-def render(cwd, token, languages, defaults):
+def render(cwd, token, languages, defaults, features):
     config = {}
     try:
         with open(os.path.join(cwd, ".gitlab-ci.yml"), "r") as stream:
@@ -34,10 +34,16 @@ def render(cwd, token, languages, defaults):
 
         if language == "terraform":
             config, stages = terraform(config)
-            config, varStages = terraform_varfiles(
-                config, os.listdir(os.path.join(cwd, "vars"))
-            )
-            stages += varStages
+
+            if "terraform-module" not in features:
+                config, varStages = terraform_varfiles(
+                    config, os.listdir(os.path.join(cwd, "vars"))
+                )
+                stages += varStages
+
+        elif language == "terratest":
+            config, stages = terratest(config)
+
         elif language == "docker":
             config, stages = docker(cwd, config)
 
@@ -108,6 +114,7 @@ def stages_compare(a, b):
         ".docker-auth": 2020,
         "fmt": 2100,
         "yor": 2200,
+        "terratest": 2225,
         "build": 2250,
         "test-plan": 2300,
         "test-apply": 2400,
@@ -475,3 +482,21 @@ def get_aws_region(name):
 class NonAliasingRTRepresenter(ruamel.yaml.representer.RoundTripRepresenter):
     def ignore_aliases(self, data):
         return True
+
+
+def terratest(config):
+    config["terratest"] = {
+        "extends": ".terraform",
+        "stage": "test",
+        "needs": [],
+        "script": [
+            "go test -v ./... -timeout 30m",
+        ],
+        "rules": [
+            {
+                "if": "$CI_PIPELINE_SOURCE == 'merge_request_event'",
+                "changes": ["*.go", "*.tf"],
+            },
+        ],
+    }
+    return config, ["test"]

@@ -18,7 +18,7 @@ import make
 import gitlabci
 import envrc
 import templates
-
+import terraform
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +68,11 @@ def main():
         ".pre-commit-config.yaml": precommit.render(langs),
         "Makefile": make.render(langs, conf),
         ".gitlab-ci.yml": gitlabci.render(
-            args.C, args.gitlab_token, langs, conf[".gitlab-ci.yml"]
+            args.C,
+            args.gitlab_token,
+            langs,
+            conf[".gitlab-ci.yml"],
+            features,
         ),
         ".envrc": envrc.render(langs, conf, features),
     }
@@ -120,8 +124,16 @@ def languages(directory):
     ret = set()
     features = set()
 
+    repo_name = os.path.basename(directory)
+
+    if repo_name.startswith("terraform-"):
+        features |= {"terraform-module"}
+
     for dirpath, dirnames, filenames in os.walk(directory):
         for filename in filenames:
+            if ".terraform" in dirpath:
+                continue
+
             if filename.endswith(".py"):
                 ret |= {"python"}
             elif filename.endswith(".tf"):
@@ -130,9 +142,24 @@ def languages(directory):
             elif filename.endswith(".json"):
                 ret |= {"json"}
             elif filename.startswith("Dockerfile"):
+                log.debug("Found Dockerfile from %s/%s", dirpath, filename)
                 ret |= {"docker"}
+            elif filename.endswith(".go") and is_terratest_file(
+                os.path.join(dirpath, filename)
+            ):
+                ret |= {"terratest"}
 
     return ret, features
+
+
+def is_terratest_file(filename):
+    log.debug("Checking if %s is terratest file", filename)
+    with open(filename, "r") as stream:
+        for line in stream:
+            if "terraform.InitAndApply" in line:
+                return True
+
+    return False
 
 
 def has_gitlab_provider(filename):
