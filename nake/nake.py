@@ -18,7 +18,6 @@ import make
 import gitlabci
 import envrc
 import templates
-import terraform
 
 log = logging.getLogger(__name__)
 
