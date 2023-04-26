@@ -32,12 +32,16 @@ def render(cwd, token, languages, defaults, features):
     for language in languages:
         stages = []
 
+        log.debug("Processing language: %s", language)
+
         if language == "terraform":
-            config, stages = terraform(config)
+            config, stages = terraform(config, features)
 
             if "terraform-module" not in features:
                 config, varStages = terraform_varfiles(
-                    config, os.listdir(os.path.join(cwd, "vars"))
+                    config,
+                    os.listdir(os.path.join(cwd, "vars")),
+                    features,
                 )
                 stages += varStages
 
@@ -141,16 +145,16 @@ def stages_compare(a, b):
     else:
         weights = {}
 
-    log.debug(
-        "Comparing %s(%d) and %s(%d): %d"
-        % (
-            a,
-            weights.get(a, 0),
-            b,
-            weights.get(b, 0),
-            weights.get(a, 0) - weights.get(b, 0),
-        )
-    )
+    # log.debug(
+    #     "Comparing %s(%d) and %s(%d): %d"
+    #     % (
+    #         a,
+    #         weights.get(a, 0),
+    #         b,
+    #         weights.get(b, 0),
+    #         weights.get(a, 0) - weights.get(b, 0),
+    #     )
+    # )
 
     return weights.get(a, default_weight(weights, a)) - weights.get(
         b, default_weight(weights, b)
@@ -217,8 +221,20 @@ def docker(cwd, config):
     return config, ["build", "push"]
 
 
-def terraform(config):
+def terraform(config, features):
     stages = ["lint"]
+
+    before_script = []
+
+    if "no-envrc" not in features:
+        before_script.append("source .envrc")
+    before_script += [
+        "set | grep '^TF'",
+        "terraform init",
+    ]
+
+    log.debug("Features: %s" % features)
+    log.debug("Config: %s" % before_script)
 
     config[".terraform"] = {
         **config.get(".terraform", {}),
@@ -227,11 +243,7 @@ def terraform(config):
                 "name": "hashicorp/terraform:latest",
                 "entrypoint": ["/bin/sh", "-c"],
             },
-            "before_script": [
-                "source .envrc",
-                "set | grep '^TF'",
-                "terraform init",
-            ],
+            "before_script": before_script,
         },
     }
 
@@ -267,7 +279,7 @@ def terraform(config):
     return config, stages
 
 
-def terraform_varfiles(config, tfvars):
+def terraform_varfiles(config, tfvars, features):
     if len(tfvars) == 0:
         return config, []
 
@@ -301,6 +313,9 @@ apply:
   needs: ["{name}-plan"]
 """
         )
+
+        if "no-envrc" in features:
+            del plan["plan"]["script"][0]
 
         if plan_job == "":
             plan_job = name

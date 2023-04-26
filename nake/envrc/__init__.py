@@ -14,6 +14,7 @@ def render(languages, defaults, features):
     default = "# vi: ft=bash\n"
 
     if "terraform-module" in features:
+        languages = languages.copy()
         languages.remove("terraform")
 
     for language in languages:

@@ -63,8 +63,17 @@ def main():
 
     langs, features = languages(args.C)
 
+    log.info("languages: %s", langs)
+
+    envrcData = envrc.render(langs, conf, features)
+
+    if envrcData is None:
+        features |= {"no-envrc"}
+
     log.info("features: %s", features)
+
     files = {
+        ".envrc": envrcData,
         ".pre-commit-config.yaml": precommit.render(langs),
         "Makefile": make.render(langs, conf),
         ".gitlab-ci.yml": gitlabci.render(
@@ -74,7 +83,6 @@ def main():
             conf[".gitlab-ci.yml"],
             features,
         ),
-        ".envrc": envrc.render(langs, conf, features),
     }
 
     save(files, args)
