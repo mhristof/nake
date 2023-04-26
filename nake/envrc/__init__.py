@@ -13,6 +13,9 @@ log = logging.getLogger(__name__)
 def render(languages, defaults, features):
     default = "# vi: ft=bash\n"
 
+    if "terraform-module" in features:
+        languages.remove("terraform")
+
     for language in languages:
         try:
             with open(os.path.join(os.path.dirname(__file__), language + ".sh")) as f:
@@ -27,5 +30,8 @@ def render(languages, defaults, features):
             log.debug("No config for language: %s", language)
 
     default = default.replace("#\n", "").replace("\n\n\n", "\n\n")
+
+    if len(default.split("\n")) == 2:
+        return None
 
     return default.strip() + "\n"
