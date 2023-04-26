@@ -11,6 +11,14 @@ def test_get_aws_region():
     assert get_aws_region("prod") == None
 
 
+def test_terraform():
+    assert terraform({}, [])[0][".terraform"]["before_script"][0] == "source .envrc"
+    assert (
+        terraform({}, ["no-envrc"])[0][".terraform"]["before_script"][0]
+        != "source .envrc"
+    )
+
+
 def test_terraform_variables():
     assert terraform_varfiles({}, ["test.tfvars"], [])[1] == ["plan", "apply"]
 

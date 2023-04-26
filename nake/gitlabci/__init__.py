@@ -227,9 +227,12 @@ def terraform(config, features):
     before_script = []
 
     if "no-envrc" not in features:
-        before_script.append("source .envrc")
+        before_script += [
+            "source .envrc",
+            "set | grep '^TF'",
+        ]
+
     before_script += [
-        "set | grep '^TF'",
         "terraform init",
     ]
 
