@@ -135,8 +135,7 @@ def stages_compare(a, b):
     elif a in image and b in image:
         weights = image
     elif (
-        a in jobs
-        and b in jobs
+        (a in jobs and b in jobs)
         or a.endswith("-plan")
         or a.endswith("-apply")
         or b.endswith("-apply")
@@ -276,6 +275,7 @@ def terraform(config, features):
                 "yor tag --tag-local-modules=true --directory .",
                 "git diff --exit-code",
             ],
+            "rules": [{"if": '$CI_PIPELINE_SOURCE == "merge_request_event"'}],
         },
     }
 
@@ -389,13 +389,13 @@ def rec_sort(d):
 def yaml_to_string(data):
     data = rec_sort(data)
 
-    yaml = ruamel.yaml.YAML()
+    thisYAML = ruamel.yaml.YAML()
     buf = io.BytesIO()
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    yaml.preserve_quotes = True
-    yaml.Representer = NonAliasingRTRepresenter
-    yaml.width = 4096
-    yaml.dump(data, buf)
+    thisYAML.indent(mapping=2, sequence=4, offset=2)
+    thisYAML.preserve_quotes = True
+    thisYAML.Representer = NonAliasingRTRepresenter
+    thisYAML.width = 4096
+    thisYAML.dump(data, buf)
 
     new_lines = []
 
