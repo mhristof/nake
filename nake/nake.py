@@ -18,6 +18,7 @@ import make
 import gitlabci
 import envrc
 import templates
+import terraform
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ def main():
         help="Config file",
     )
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     level = logging.INFO
 
@@ -72,6 +73,7 @@ def main():
     log.info("features: %s", features)
 
     files = {
+        "versions.tf": terraform.render(args.C),
         ".envrc": envrcData,
         ".pre-commit-config.yaml": precommit.render(langs),
         "Makefile": make.render(langs, conf),
@@ -83,6 +85,16 @@ def main():
             features,
         ),
     }
+
+    specific_files = {}
+
+    for argument in unknown:
+        if files.get(argument) is not None:
+            specific_files[argument] = files[argument]
+
+    if len(specific_files) > 0:
+        log.info("generating specific files: %s", list(specific_files.keys()))
+        files = specific_files
 
     save(files, args)
 
