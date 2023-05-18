@@ -246,6 +246,14 @@ def terraform(config, features):
                 "entrypoint": ["/bin/sh", "-c"],
             },
             "before_script": before_script,
+            "rules": [
+                {"if": "$CI_MERGE_REQUEST_LABELS =~ /terraform-auto-approve/"},
+                {
+                    "if": "$CI_PIPELINE_SOURCE == 'merge_request_event'",
+                    "when": "manual",
+                },
+                {"if": "$CI_PIPELINE_SOURCE == 'push'", "when": "manual"},
+            ],
         },
     }
 
@@ -351,6 +359,9 @@ apply:
                 **{"AWS_REGION": region},
             }
             log.debug("Setting AWS_REGION to %s", region)
+
+        if name == "test":
+            plan["apply"].pop("when")
 
         config = {
             **config,

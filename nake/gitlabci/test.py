@@ -43,6 +43,16 @@ def test_terraform_variables():
         == "test-plan"
     )
 
+    assert (
+        terraform_varfiles({}, ["test.tfvars"], [])[0]["test-apply"].get("when", None)
+        == None
+    )
+
+    assert (
+        terraform_varfiles({}, ["prod.tfvars"], [])[0]["prod-apply"].get("when", None)
+        == "manual"
+    )
+
 
 def test_stages_compare():
     cases = {
