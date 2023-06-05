@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nake"
-version = "1.6.0"
+version = "1.7.0"
 description = "Project dotfiles"
 authors = ["Mike Christofilopoulos <mhristof@gmail.com>"]
 readme = "README.md"
