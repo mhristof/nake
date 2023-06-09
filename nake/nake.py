@@ -59,6 +59,8 @@ def main():
     with open(args.config, "r") as stream:
         conf = yaml.safe_load(stream)
 
+    conf["C"] = args.C
+
     save(templates.files(args.C), args)
 
     langs, features = languages(args.C)
@@ -73,6 +75,7 @@ def main():
     log.info("features: %s", features)
 
     files = {
+        "Dockerfile": templates.dockerfile(langs, conf),
         "versions.tf": terraform.render(args.C),
         ".envrc": envrcData,
         ".pre-commit-config.yaml": precommit.render(langs),
@@ -167,6 +170,8 @@ def languages(directory):
                 os.path.join(dirpath, filename)
             ):
                 ret |= {"terratest"}
+            elif filename.endswith(".go"):
+                ret |= {"go"}
 
     return ret, features
 
