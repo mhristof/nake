@@ -11,7 +11,7 @@ AWS_REGION ?= $(shell yq .variables.AWS_REGION .gitlab-ci.yml)
 ECR ?= $(shell yq .variables.AWS_ACCOUNT_ID .gitlab-ci.yml).dkr.ecr.$(AWS_REGION).amazonaws.com
 BASE_VERSION := $(shell grep FROM Dockerfile | tail -1  | awk '{print $$2}')
 
-.build: Dockerfile $(shell grep COPY Dockerfile | cut -d ' ' -f2)
+.build: Dockerfile $(shell grep COPY Dockerfile | sed 's/--from=\w*//' | cut -d ' ' -f2)
     docker build --progress=tty \
        --label=org.opencontainers.image.base.version=$(BASE_VERSION) \
        --label=org.opencontainers.image.created=$(CI_JOB_STARTED_AT) \
