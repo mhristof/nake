@@ -148,7 +148,7 @@ def languages(directory):
 
     repo_name = os.path.basename(directory)
 
-    if repo_name.startswith("terraform-"):
+    if repo_name.startswith("terraform-") and not repo_name.endswith("-infra"):
         features |= {"terraform-module"}
 
     for dirpath, dirnames, filenames in os.walk(directory):

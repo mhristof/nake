@@ -16,6 +16,9 @@ def render(languages, defaults, features):
     if "terraform-module" in features:
         languages = languages.copy()
         languages.remove("terraform")
+        log.debug("Removing terraform from languages [features: %s]", features)
+
+    log.debug("Loading config for languages: %s", languages)
 
     for language in languages:
         try:
@@ -27,6 +30,7 @@ def render(languages, defaults, features):
                         "gitlab_token": "terraform-gitlab-provider" in features,
                     }
                 )
+                log.debug("Loaded config for language: %s", language)
         except FileNotFoundError:
             log.debug("No config for language: %s", language)
 
