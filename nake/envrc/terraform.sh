@@ -17,7 +17,7 @@ if [[ -f "vars/$ENV-$AWS_REGION.tfvars" ]]; then
     VARS="-var-file=vars/$ENV-$AWS_REGION.tfvars"
 fi
 
-export TF_DATA_DIR=".terraform-$ENV"
+export TF_DATA_DIR=".terraform-$ENV-$AWS_REGION"
 
 REMOTE=$(git config --get remote.origin.url | sed 's!https://.*@!!g' | sed 's!git@gitlab.com:\(.*\)!gitlab.com/\1!' | sed 's/.git$//')
 export TF_CLI_ARGS_init="-backend-config=bucket=terraform-state-${AWS_ACCOUNT_NAME} -backend-config=key=$REMOTE/$AWS_REGION/terraform.tfstate"
