@@ -264,7 +264,7 @@ def terraform(config, features):
         **config.get("yor", {}),
         **{
             "image": {
-                "name": "bridgecrew/yor:0.1.170",
+                "name": "bridgecrew/yor:0.1.185",
                 "entrypoint": [
                     "/usr/bin/env",
                     "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -272,8 +272,7 @@ def terraform(config, features):
             },
             "stage": "lint",
             "script": [
-                "yor tag --tag-local-modules=true --directory .",
-                "git diff --exit-code",
+                "yor tag --tag-local-modules=true --directory . --validate",
             ],
             "rules": [{"if": '$CI_PIPELINE_SOURCE == "merge_request_event"'}],
         },
